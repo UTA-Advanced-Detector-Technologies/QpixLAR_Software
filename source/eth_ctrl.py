@@ -66,6 +66,11 @@ class GUI(QMainWindow):
         btn_read_qpix.clicked.connect(lambda x: self.readReg('QPIX'))
         layout.addWidget(btn_read_qpix, 0, 2)
 
+        btn_read_ctrl = QPushButton()
+        btn_read_ctrl.setText('CTRL')
+        btn_read_ctrl.clicked.connect(lambda x: self.readReg('CTRL'))
+        layout.addWidget(btn_read_ctrl, 0, 3)
+
         btn_writeReg = QPushButton()
         btn_writeReg.setText('write reg')
         btn_writeReg.clicked.connect(self.writeReg)
