@@ -56,11 +56,6 @@ class GUI(QMainWindow):
         btn_read_i2c.clicked.connect(lambda x: self.readReg('I2C'))
         layout.addWidget(btn_read_i2c, 0, 0)
 
-        btn_read_spi = QPushButton()
-        btn_read_spi.setText('SPI')
-        btn_read_spi.clicked.connect(lambda x: self.readReg('SPI'))
-        layout.addWidget(btn_read_spi, 0, 1)
-
         btn_read_qpix = QPushButton()
         btn_read_qpix.setText('QPIX')
         btn_read_qpix.clicked.connect(lambda x: self.readReg('QPIX'))
@@ -71,19 +66,27 @@ class GUI(QMainWindow):
         btn_read_ctrl.clicked.connect(lambda x: self.readReg('CTRL'))
         layout.addWidget(btn_read_ctrl, 0, 3)
 
+        # control to set SPI1
         self.s_addr = QSpinBox()
-        self.s_addr.setRange(4096, 8192)
-        self.s_addr.setValue(6000)
-        self._laddr = QLabel("addr")
+        self.s_addr = QDoubleSpinBox()
+        self.s_addr.setRange(0.0, 1.0)  # Set range for the float value
+        self.s_addr.setSingleStep(0.01) 
+        self.s_addr.setValue(0.5)
+        self.s_addr.valueChanged.connect(self.readSPI)
+        self._laddr = QLabel("VCOMP1")
         layout.addWidget(self._laddr, 1, 0)
         layout.addWidget(self.s_addr, 1, 1)
 
-        self.s_addrVal = QSpinBox()
-        self.s_addrVal.setRange(0, 4095)
-        self.s_addrVal.setValue(2000)
-        self._lval = QLabel("val")
-        layout.addWidget(self._lval, 1, 2)
-        layout.addWidget(self.s_addrVal, 1, 3)
+        # control to set SPI2
+        self.s_addr2 = QSpinBox()
+        self.s_addr2 = QDoubleSpinBox()
+        self.s_addr2.setRange(0.0, 1.0)  # Set range for the float value
+        self.s_addr2.setSingleStep(0.01) 
+        self.s_addr2.setValue(0.5)
+        self.s_addr2.valueChanged.connect(self.readSPI2)
+        self._laddr = QLabel("VCOMP2")
+        layout.addWidget(self._laddr, 1, 2)
+        layout.addWidget(self.s_addr2, 1, 3)
 
         self._qdbPage.setLayout(layout)
         return self._qdbPage
@@ -126,6 +129,43 @@ class GUI(QMainWindow):
     ############################
     ## Zybo specific Commands ##
     ############################
+    def calcSPI(self, spin_box_value):
+        """
+        helper function to convert double spin box to useful bit value sent to SPI
+        """
+        addr = 0
+        spi_buf = 1 << 14 # buffer DAC output
+        addr |= spi_buf
+
+        spi_gain = 1 << 13 # active low gain*2
+        addr |= spi_gain
+
+        spi_on = 1 << 12 # active low shut down
+        addr |= spi_on
+
+        dval = int(spin_box_value * 1024)
+        dac_val = (dval & 0x3ff) << 2
+        addr |= dac_val
+
+        return addr
+
+    def readSPI(self):
+        """
+        fill in addr value to be sent to the appropriate SPI controller
+        """
+        addr = self.calcSPI(self.s_addr.value())
+        readVal = self.eth.regRead(addr, cmd='SPI')
+        return readVal
+
+    def readSPI2(self):
+        """
+        fill in addr value to be sent to the appropriate SPI controller
+        """
+        addr = self.calcSPI(self.s_addr2.value())
+        addr |= 1<<31 # this is how the command interpreter selects between the SPI-DACs
+        readVal = self.eth.regRead(addr, cmd='SPI')
+        return readVal
+
     def readReg(self, cmd: str):
         """
         read a specific asic reg
