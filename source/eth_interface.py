@@ -8,12 +8,12 @@ from PyQt5.QtCore import QObject, QByteArray, pyqtSignal, QThread
 from PyQt5.QtNetwork import QTcpSocket, QHostAddress, QUdpSocket
 
 # global defualts to configure connection to socket
-ETH_IP      = '10.15.0.230' # set local ethernet port to 192.169.1.17 to connect
+ETH_IP      = '192.168.1.10' # set local ethernet port to 192.169.1.17 to connect
 ETH_PORT    = 7
 BUFFER_SIZE = 1024
 
 # UDP Info
-ETH_UDP_IP   = '10.15.0.230'
+ETH_UDP_IP   = '192.168.1.10'
 ETH_UDP_PORT = 8
 EXIT_PACKET = bytes("ZaiJian", encoding="utf-8")
 PACKET_HEADER = bytes("HEADER", encoding="utf-8")

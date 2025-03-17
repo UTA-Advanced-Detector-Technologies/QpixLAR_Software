@@ -53,7 +53,7 @@ class GUI(QMainWindow):
 
         btn_init = QPushButton()
         btn_init.setText('read ID')
-        # btn_init.clicked.connect(self.readID)
+        btn_init.clicked.connect(self.readReg)
         layout.addWidget(btn_init, 0, 0)
 
         btn = QPushButton()
