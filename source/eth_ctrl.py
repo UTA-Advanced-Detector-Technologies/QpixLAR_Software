@@ -11,6 +11,8 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QAction
 
 from eth_interface import (eth_interface, EthBadAddr, DEFAULT_PACKET_SIZE)
 
+import qpixlar_regmap as REG
+
 class GUI(QMainWindow):
 
     close_udp = pyqtSignal()
@@ -67,7 +69,6 @@ class GUI(QMainWindow):
         layout.addWidget(btn_read_ctrl, 0, 3)
 
         # control to set SPI1
-        self.s_addr = QSpinBox()
         self.s_addr = QDoubleSpinBox()
         self.s_addr.setRange(0.0, 1.0)  # Set range for the float value
         self.s_addr.setSingleStep(0.01) 
@@ -78,7 +79,6 @@ class GUI(QMainWindow):
         layout.addWidget(self.s_addr, 1, 1)
 
         # control to set SPI2
-        self.s_addr2 = QSpinBox()
         self.s_addr2 = QDoubleSpinBox()
         self.s_addr2.setRange(0.0, 1.0)  # Set range for the float value
         self.s_addr2.setSingleStep(0.01) 
@@ -87,6 +87,36 @@ class GUI(QMainWindow):
         self._laddr = QLabel("VCOMP2")
         layout.addWidget(self._laddr, 1, 2)
         layout.addWidget(self.s_addr2, 1, 3)
+
+        # control to set VCM1
+        self.vcm_addr1 = QDoubleSpinBox()
+        self.vcm_addr1.setRange(0.0, 1.0)  # Set range for the float value
+        self.vcm_addr1.setSingleStep(0.01) 
+        self.vcm_addr1.setValue(0.5)
+        self.vcm_addr1.valueChanged.connect(self.readI2C_1)
+        self._laddr = QLabel("VCM1")
+        layout.addWidget(self._laddr, 2, 0)
+        layout.addWidget(self.vcm_addr1, 2, 1)
+
+        # control to set VCM2
+        self.vcm_addr2 = QDoubleSpinBox()
+        self.vcm_addr2.setRange(0.0, 1.0)  # Set range for the float value
+        self.vcm_addr2.setSingleStep(0.01) 
+        self.vcm_addr2.setValue(0.5)
+        self.vcm_addr2.valueChanged.connect(self.readI2C_2)
+        self._laddr = QLabel("VCM2")
+        layout.addWidget(self._laddr, 2, 2)
+        layout.addWidget(self.vcm_addr2, 2, 3)
+
+        # control to set V_LVDS_CM
+        self.vcm_addr3 = QDoubleSpinBox()
+        self.vcm_addr3.setRange(0.0, 1.0)  # Set range for the float value
+        self.vcm_addr3.setSingleStep(0.01) 
+        self.vcm_addr3.setValue(0.5)
+        self.vcm_addr3.valueChanged.connect(self.readI2C_3)
+        self._laddr = QLabel("LVDS_CM")
+        layout.addWidget(self._laddr, 3, 0)
+        layout.addWidget(self.vcm_addr3, 3, 1)
 
         self._qdbPage.setLayout(layout)
         return self._qdbPage
@@ -149,9 +179,31 @@ class GUI(QMainWindow):
 
         return addr
 
+    def calcI2C(self, addr, port, control, dac_value):
+        """
+        helper function used to construct i2c addr sent to zynq cmd interpreter
+        """
+        i2c_val = 0
+
+        # select i2c addr
+        i2c_val |= (addr & 0xff) << 20
+
+        # select DAC port
+        i2c_val |= (port & 0x3) << 16 # DACB | DACA
+
+        # select control bits
+        i2c_val |= (control & 0xf) << 12 # PD1 | PD0 | bCLR | bLDAC
+
+        # update dac value, using 12 bit DAC
+        dval = int(dac_value * 1024)
+        i2c_val |= (dval & 0xfff)
+
+        return i2c_val
+
     def readSPI(self):
         """
         fill in addr value to be sent to the appropriate SPI controller
+        used to control VCOMP1 for this particular Zturn carrier.
         """
         addr = self.calcSPI(self.s_addr.value())
         readVal = self.eth.regRead(addr, cmd='SPI')
@@ -160,10 +212,41 @@ class GUI(QMainWindow):
     def readSPI2(self):
         """
         fill in addr value to be sent to the appropriate SPI controller
+        used to control VCOMP2 for this particular Zturn carrier.
         """
         addr = self.calcSPI(self.s_addr2.value())
         addr |= 1<<31 # this is how the command interpreter selects between the SPI-DACs
         readVal = self.eth.regRead(addr, cmd='SPI')
+        return readVal
+
+    def readI2C_1(self):
+        """
+        used to control VCM1
+        """
+        dval = self.vcm_addr1.value()
+        reg_addr = self.calcI2C(addr=REG.IIC_SLAVE_ADDR_2, port=1,
+                                control=REG.IIC_CTRL_DEFAULT, dac_value=dval)
+        readVal = self.eth.regRead(reg_addr, cmd='I2C')
+        return readVal
+
+    def readI2C_2(self):
+        """
+        used to control VCM2
+        """
+        dval = self.vcm_addr2.value()
+        reg_addr = self.calcI2C(addr=REG.IIC_SLAVE_ADDR_2, port=2,
+                                control=REG.IIC_CTRL_DEFAULT, dac_value=dval)
+        readVal = self.eth.regRead(reg_addr, cmd='I2C')
+        return readVal
+
+    def readI2C_3(self):
+        """
+        used to control LVDS_CM
+        """
+        dval = self.vcm_addr3.value()
+        reg_addr = self.calcI2C(addr=REG.IIC_SLAVE_ADDR_1, port=1,
+                                control=REG.IIC_CTRL_DEFAULT, dac_value=dval)
+        readVal = self.eth.regRead(reg_addr, cmd='I2C')
         return readVal
 
     def readReg(self, cmd: str):

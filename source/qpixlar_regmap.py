@@ -12,6 +12,13 @@ CTRL_SHDN = 0x4C520000
 CTRL_MASK = 0x4C520001
 CTRL_PLEN = 0x4C520010
 
+# i2c controls
+IIC_SLAVE_ADDR_1 = 0x0C
+IIC_SLAVE_ADDR_2 = 0x0D
+
+# generally want PD0 = PD1 = 0, and bCLR = bLDAC = 1, or 0x3
+IIC_CTRL_DEFAULT = 0x3 
+
 # total number of reg_0..N qpix registers
 QPIX_NUM_REGS = 9
 
