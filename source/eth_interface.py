@@ -139,13 +139,13 @@ class eth_interface(QObject):
     def isConnected(self) -> bool:
         return self._tcpConnected
 
-    def regRead(self, addr) -> int:
+    def regRead(self, addr, cmd: str) -> int:
         """
         read a particular address from the Zynq
         """
 
         # form byte message
-        args = ['I2C', addr]
+        args = [cmd, addr]
         if isinstance(args, str): args = args.split(' ')
         hdr = args[0]+'\0'
         byte_arr = str.encode(hdr)

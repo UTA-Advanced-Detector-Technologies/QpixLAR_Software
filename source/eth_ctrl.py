@@ -51,20 +51,20 @@ class GUI(QMainWindow):
         self._qdbPage = QWidget()
         layout = QGridLayout()
 
-        btn_init = QPushButton()
-        btn_init.setText('read ID')
-        btn_init.clicked.connect(self.readReg)
-        layout.addWidget(btn_init, 0, 0)
+        btn_read_i2c = QPushButton()
+        btn_read_i2c.setText('i2c')
+        btn_read_i2c.clicked.connect(lambda x: self.readReg('I2C'))
+        layout.addWidget(btn_read_i2c, 0, 0)
 
-        btn = QPushButton()
-        btn.setText('trigger')
-        # btn.clicked.connect(lambda: self.trigger(hard=True))
-        layout.addWidget(btn, 0, 1)
+        btn_read_spi = QPushButton()
+        btn_read_spi.setText('SPI')
+        btn_read_spi.clicked.connect(lambda x: self.readReg('SPI'))
+        layout.addWidget(btn_read_spi, 0, 1)
 
-        btn_gtimeout = QPushButton()
-        btn_gtimeout.setText('read reg')
-        btn_gtimeout.clicked.connect(self.readReg)
-        layout.addWidget(btn_gtimeout, 0, 2)
+        btn_read_qpix = QPushButton()
+        btn_read_qpix.setText('QPIX')
+        btn_read_qpix.clicked.connect(lambda x: self.readReg('QPIX'))
+        layout.addWidget(btn_read_qpix, 0, 2)
 
         btn_writeReg = QPushButton()
         btn_writeReg.setText('write reg')
@@ -126,12 +126,12 @@ class GUI(QMainWindow):
     ############################
     ## Zybo specific Commands ##
     ############################
-    def readReg(self, addr):
+    def readReg(self, cmd: str):
         """
         read a specific asic reg
         """
         addr = self.s_addr.value()
-        readVal = self.eth.regRead(addr)
+        readVal = self.eth.regRead(addr, cmd=cmd)
         print(f"read addr reg: 0x{addr:06x}")
         print(f"reg read val: {readVal:08x}")
         return readVal
