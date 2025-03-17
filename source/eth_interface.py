@@ -144,8 +144,12 @@ class eth_interface(QObject):
         read a particular address from the Zynq
         """
 
+        if isinstance(addr, list):
+            args = [cmd, *addr]
+        else:
+            args = [cmd, addr]
+            
         # form byte message
-        args = [cmd, addr]
         if isinstance(args, str): args = args.split(' ')
         hdr = args[0]+'\0'
         byte_arr = str.encode(hdr)

@@ -71,24 +71,19 @@ class GUI(QMainWindow):
         btn_read_ctrl.clicked.connect(lambda x: self.readReg('CTRL'))
         layout.addWidget(btn_read_ctrl, 0, 3)
 
-        btn_writeReg = QPushButton()
-        btn_writeReg.setText('write reg')
-        btn_writeReg.clicked.connect(self.writeReg)
-        layout.addWidget(btn_writeReg, 1, 0)
-
         self.s_addr = QSpinBox()
-        self.s_addr.setRange(0, 32)
-        self.s_addr.setValue(22)
+        self.s_addr.setRange(4096, 8192)
+        self.s_addr.setValue(6000)
         self._laddr = QLabel("addr")
-        layout.addWidget(self._laddr, 1, 1)
-        layout.addWidget(self.s_addr, 2, 1)
+        layout.addWidget(self._laddr, 1, 0)
+        layout.addWidget(self.s_addr, 1, 1)
 
         self.s_addrVal = QSpinBox()
         self.s_addrVal.setRange(0, 4095)
         self.s_addrVal.setValue(2000)
         self._lval = QLabel("val")
         layout.addWidget(self._lval, 1, 2)
-        layout.addWidget(self.s_addrVal, 2, 2)
+        layout.addWidget(self.s_addrVal, 1, 3)
 
         self._qdbPage.setLayout(layout)
         return self._qdbPage
@@ -137,8 +132,6 @@ class GUI(QMainWindow):
         """
         addr = self.s_addr.value()
         readVal = self.eth.regRead(addr, cmd=cmd)
-        print(f"read addr reg: 0x{addr:06x}")
-        print(f"reg read val: {readVal:08x}")
         return readVal
 
     def writeReg(self):
