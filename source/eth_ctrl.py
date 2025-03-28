@@ -195,7 +195,7 @@ class GUI(QMainWindow):
         i2c_val |= (control & 0xf) << 12 # PD1 | PD0 | bCLR | bLDAC
 
         # update dac value, using 12 bit DAC
-        dval = int(dac_value * 1024)
+        dval = int(dac_value * 2048)
         i2c_val |= (dval & 0xfff)
 
         return i2c_val
@@ -224,7 +224,7 @@ class GUI(QMainWindow):
         used to control VCM1
         """
         dval = self.vcm_addr1.value()
-        reg_addr = self.calcI2C(addr=REG.IIC_SLAVE_ADDR_2, port=1,
+        reg_addr = self.calcI2C(addr=REG.IIC_SLAVE_ADDR_2, port=2,
                                 control=REG.IIC_CTRL_DEFAULT, dac_value=dval)
         readVal = self.eth.regRead(reg_addr, cmd='I2C')
         return readVal
@@ -234,7 +234,7 @@ class GUI(QMainWindow):
         used to control VCM2
         """
         dval = self.vcm_addr2.value()
-        reg_addr = self.calcI2C(addr=REG.IIC_SLAVE_ADDR_2, port=2,
+        reg_addr = self.calcI2C(addr=REG.IIC_SLAVE_ADDR_2, port=1,
                                 control=REG.IIC_CTRL_DEFAULT, dac_value=dval)
         readVal = self.eth.regRead(reg_addr, cmd='I2C')
         return readVal
