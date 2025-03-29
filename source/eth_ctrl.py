@@ -38,7 +38,7 @@ class GUI(QMainWindow):
         self.tabW = QTabWidget()
         self.tabW.addTab(self._makeEthlayout(), "ETH")
 
-        self.tabW.addTab(self._makeTestlayout(), "TEST")
+        self.tabW.addTab(self._makeCTRLayout(), "CTRL")
 
         # show the main window
         self.setCentralWidget(self.tabW)
@@ -121,40 +121,34 @@ class GUI(QMainWindow):
         self._qdbPage.setLayout(layout)
         return self._qdbPage
 
-    def _makeTestlayout(self):
+    def _makeCTRLayout(self):
         """
         Helper wrapped to put testing click functions on a separate tab for custom uses
         """
         self._testPage = QWidget()
         layout = QGridLayout()
 
-        scan_dac = QPushButton()
-        scan_dac.setText('Scan DAC')
-        # scan_dac.clicked.connect(self.ScanDAC)
-        layout.addWidget(scan_dac, 0, 0)
-
-        btn = QPushButton()
-        btn.setText('Reset DAC')
-        # btn.clicked.connect(self.ResetDAC)
-        layout.addWidget(btn, 0, 1)
-
-        dbtn = QPushButton()
-        dbtn.setText('Read Debug')
-        # dbtn.clicked.connect(self.ReadDebug)
-        layout.addWidget(dbtn, 1, 0)
-
-        hIntbtn = QPushButton()
-        hIntbtn.setText('Hard Int')
-        # hIntbtn.clicked.connect(self.HardInt)
-        layout.addWidget(hIntbtn, 1, 1)
-
-        hIntbtn = QPushButton()
-        hIntbtn.setText('Reset ASIC')
-        # hIntbtn.clicked.connect(self.ResetASIC)
-        layout.addWidget(hIntbtn, 2, 0)
+        # 4x4 channel grid of check boxes
+        self._mask = []
+        for i in range(4):
+            for j in range(4):
+                a = QCheckBox(f"{4*i+j}")
+                a.stateChanged.connect(self.updateMask)
+                self._mask.append(a)
+                layout.addWidget(a, i, j)
 
         self._testPage.setLayout(layout)
         return self._testPage
+
+    def updateMask(self):
+        """
+        update the qpix mask on a value change
+        """
+        s = [ 1<<i if self._mask[i].isChecked() else 0 for i in range(len(self._mask))]
+        mask = sum(s)
+        # example sanity checking here
+        # print(f"sum is: {mask:04x}")
+        self.readCTRL(reg_addr=REG.CTRL_SHDN, val=mask)
 
     ############################
     ## Zybo specific Commands ##
@@ -200,6 +194,18 @@ class GUI(QMainWindow):
 
         return i2c_val
 
+    def calcQPIX(self, addr):
+        """
+        Wrapper function to access qpix interface registers
+        """
+        pass
+
+    def calcCTRL(self, addr):
+        """
+        Wrapper function to access CTRL registers
+        """
+        pass
+        
     def readSPI(self):
         """
         fill in addr value to be sent to the appropriate SPI controller
@@ -247,6 +253,15 @@ class GUI(QMainWindow):
         reg_addr = self.calcI2C(addr=REG.IIC_SLAVE_ADDR_1, port=1,
                                 control=REG.IIC_CTRL_DEFAULT, dac_value=dval)
         readVal = self.eth.regRead(reg_addr, cmd='I2C')
+        return readVal
+
+    def readCTRL(self,  reg_addr, val):
+        """
+        Control register IO function
+        These commands expect a single reg_addr space as well as up to a 32bit value
+        to send to the register of choice
+        """
+        readVal = self.eth.regWrite(addr=reg_addr, val=val, cmd='CTRL')
         return readVal
 
     def readReg(self, cmd: str):

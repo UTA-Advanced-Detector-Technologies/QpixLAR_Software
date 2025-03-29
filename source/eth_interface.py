@@ -151,7 +151,8 @@ class eth_interface(QObject):
             
         # form byte message
         if isinstance(args, str): args = args.split(' ')
-        hdr = args[0]+'\0'
+        if len(cmd) < 4:
+            hdr = args[0]+'\0'
         byte_arr = str.encode(hdr)
         for arg in args[1:]:
             if not isinstance(arg, int): arg = int(arg, 0)
@@ -169,25 +170,31 @@ class eth_interface(QObject):
             print('WARNING: REG no data!')
             return -1
 
-    def regWrite(self, addr, val) -> int:
+    def regWrite(self, addr, val, cmd='I2C') -> int:
         """
-        write to a particular address from the Zynq
+        write multiple possible bytes to the TCP socket.
+        for infomation on how these packets are handled, see helper.c 
+        in the zynq firmware.
         """
-        print(f"writing {val:02x} to addr: {addr:06x}")
+        print(f"writing {val:08x} to addr: {addr:08x}, cmd={cmd}")
 
         # form byte message
-        args = ['I2C', addr, val]
+        args = [cmd, addr, val]
         if isinstance(args, str): args = args.split(' ')
-        hdr = args[0]+'\0'
+        if len(cmd) < 4:
+            hdr = args[0]+'\0'
+        else:
+            hdr = args[0]
         byte_arr = str.encode(hdr)
         for arg in args[1:]:
             if not isinstance(arg, int): arg = int(arg, 0)
             byte_arr += struct.pack('<I', arg)
 
         # returns number of bytes written
+        print(f"sending bytes: {byte_arr}")
         cnt = self._write(byte_arr)
         self._tcpsocket.waitForReadyRead(1000)
-        return cn
+        return cnt
 
     def _verify(self) -> bool:
         """

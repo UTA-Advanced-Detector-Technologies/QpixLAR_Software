@@ -7,10 +7,6 @@ QPIX_PACKET = 0x58495051
 # ASCII LRTC with endian-ness
 CTRL_PACKET = 0x4C525443
 
-# special control values to select ctrl registers
-CTRL_SHDN = 0x4C520000
-CTRL_MASK = 0x4C520001
-CTRL_PLEN = 0x4C520010
 
 # i2c controls
 IIC_SLAVE_ADDR_1 = 0x0C
@@ -25,3 +21,12 @@ QPIX_NUM_REGS = 9
 # define good and packet packets for return types on reg IO
 GOOD_PACKET = 0xc0decafe
 BAD_PACKET = 0xabadadd5
+
+
+#########################
+## CTRL Register Addrs ##
+#########################
+# special control values to select ctrl registers
+CTRL_SHDN = 0x4C520000
+CTRL_MASK = 0x4C520001
+CTRL_PLEN = 0x4C520010
