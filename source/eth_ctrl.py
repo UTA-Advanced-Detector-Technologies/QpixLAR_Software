@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QAction
 from eth_interface import (eth_interface, EthBadAddr, DEFAULT_PACKET_SIZE)
 
 import qpixlar_regmap as REG
+from helpers import calcMaskFromCheckboxes
 
 class GUI(QMainWindow):
 
@@ -128,31 +129,54 @@ class GUI(QMainWindow):
         self._testPage = QWidget()
         layout = QGridLayout()
 
-        # 4x4 channel grid of check boxes
-        self._mask = []
+        # 4x4 channel grid of check boxes which control whether or not the LTC
+        # chip at the corresponding channel will be shutdown..
+        l =  QLabel("Shutdown Mask")
+        layout.addWidget(l, 0, 0)
+        self._shutdownMask = []
         for i in range(4):
             for j in range(4):
                 a = QCheckBox(f"{4*i+j}")
-                a.stateChanged.connect(self.updateMask)
-                self._mask.append(a)
-                layout.addWidget(a, i, j)
+                a.stateChanged.connect(self.updateShutdownMask)
+                self._shutdownMask.append(a)
+                layout.addWidget(a, 1+i, j)
+
+        # 4x4 channel grid of check boxes which control whether or not a trigger
+        # will occur if a reset is detected at this pixel
+        l =  QLabel("Trigger Mask")
+        layout.addWidget(l, 5, 0)
+        self._triggerMask = []
+        for i in range(4):
+            for j in range(4):
+                a = QCheckBox(f"{4*i+j}")
+                a.stateChanged.connect(self.updateTriggerMask)
+                self._triggerMask.append(a)
+                layout.addWidget(a, 6+i, j)
 
         self._testPage.setLayout(layout)
         return self._testPage
 
-    def updateMask(self):
+    def updateShutdownMask(self):
         """
-        update the qpix mask on a value change
+        update the LTC shutdown pins on a checkbox value change
         """
-        s = [ 1<<i if self._mask[i].isChecked() else 0 for i in range(len(self._mask))]
-        mask = sum(s)
+        mask = calcMaskFromCheckboxes(self._shutdownMask)
         # example sanity checking here
         # print(f"sum is: {mask:04x}")
         self.readCTRL(reg_addr=REG.CTRL_SHDN, val=mask)
 
-    ############################
-    ## Zybo specific Commands ##
-    ############################
+    def updateTriggerMask(self):
+        """
+        update the LTC shutdown pins on a checkbox value change
+        """
+        mask = calcMaskFromCheckboxes(self._triggerMask)
+        # example sanity checking here
+        # print(f"sum is: {mask:04x}")
+        self.readCTRL(reg_addr=REG.CTRL_MASK, val=mask)
+
+    #############################
+    ## Zturn specific Commands ##
+    #############################
     def calcSPI(self, spin_box_value):
         """
         helper function to convert double spin box to useful bit value sent to SPI
