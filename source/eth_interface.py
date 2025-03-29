@@ -13,6 +13,7 @@ ETH_PORT    = 7
 BUFFER_SIZE = 1024
 
 # UDP Info
+LOCAL_UDP_IP   = '192.168.1.1' # this should be the ip address on the ethernet socket
 ETH_UDP_IP   = '192.168.1.10'
 ETH_UDP_PORT = 8
 EXIT_PACKET = bytes("ZaiJian", encoding="utf-8")
@@ -49,16 +50,35 @@ class UDPworker(QObject):
 
         self._first = 0
 
+    def _send(self, msg):
+        """
+        Sending bytes to the zturn udp server
+        lets it know where it should send its received data packets to
+        """
+        data = QByteArray(msg.encode('utf-8'))
+        try:
+            a = self._udpsocket.writeDatagram(data, QHostAddress(ETH_UDP_IP),
+                                           ETH_UDP_PORT)
+        except Exception as ex:
+            print(ex)
+            return False
+        if a <= 0:
+            print("WARNING: unable to send UDP data to zturn")
+            return False
+        return True
+
     def _udp_connect(self):
-        # try to connect to the UDP socket
+        """
+        try to connect to the UDP socket, and get a response from the zturn 
+        """
         print("udp connecting..", end="")
         connected = False
         try:
-            bound = self._udpsocket.bind(QHostAddress(ETH_UDP_IP), ETH_UDP_PORT)
+            bound = self._udpsocket.bind(QHostAddress(LOCAL_UDP_IP), ETH_UDP_PORT)
             print("Thread UDP..", end=" ")
             if bound:
-                print("connected!")
-                connected = True
+                print("connected!", end= " ")
+                connected = self._send("ni hao")
             else:
                 print("ERROR!! UDP unconnected!..")
 
@@ -73,7 +93,6 @@ class UDPworker(QObject):
             datagram.resize(self._udpsocket.pendingDatagramSize())
             datagram, host, port = self._udpsocket.readDatagram(self._udpsocket.pendingDatagramSize())
             if datagram == EXIT_PACKET:
-                self.f.close()
                 self.finished.emit()
                 self._udpsocket.close()
                 return
@@ -81,7 +100,7 @@ class UDPworker(QObject):
                 self.new_data.emit(datagram)
                 size = len(datagram)
                 nresets = int((size-2)/8)
-                self.f.write(PACKET_HEADER+size.to_bytes(4, byteorder="little")+datagram)
+                print("reading data")
 
     def run(self):
         if self._first == 0:
@@ -90,8 +109,8 @@ class UDPworker(QObject):
         if not self._udp_connect():
             self.finished.emit()
         else:
-            self.output_file = datetime.datetime.now().strftime('./bin/%m_%d_%Y_%H_%M_%S.bin')
-            self.f = open(self.output_file, 'wb')
+            self.output_file = datetime.datetime.now().strftime('./data/%m_%d_%Y_%H_%M_%S.h5')
+            # self.f = open(self.output_file, 'wb')
 
 
 class eth_interface(QObject):
@@ -119,6 +138,14 @@ class eth_interface(QObject):
         # storage for retrieiving tcp data
         self.data = None
 
+        # manage the SAQ-UDP thread reader
+        self.thread = QThread()
+        self.worker = UDPworker()
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.udp_done)
+        self.thread.start()
+
         # create the tcp socket
         self._tcpsocket = QTcpSocket(self)
         self._tcpConnected = self._tcp_connect()
@@ -128,13 +155,6 @@ class eth_interface(QObject):
 
             # make sure to check this works
             # self._verify()
-
-        # manage the SAQ-UDP thread reader
-        self.thread = QThread()
-        self.worker = UDPworker()
-        self.worker.moveToThread(self.thread)
-        self.thread.started.connect(self.worker.run)
-        self.worker.finished.connect(self.udp_done)
 
     def isConnected(self) -> bool:
         return self._tcpConnected
@@ -176,8 +196,6 @@ class eth_interface(QObject):
         for infomation on how these packets are handled, see helper.c 
         in the zynq firmware.
         """
-        print(f"writing {val:08x} to addr: {addr:08x}, cmd={cmd}")
-
         # form byte message
         args = [cmd, addr, val]
         if isinstance(args, str): args = args.split(' ')
@@ -191,7 +209,6 @@ class eth_interface(QObject):
             byte_arr += struct.pack('<I', arg)
 
         # returns number of bytes written
-        print(f"sending bytes: {byte_arr}")
         cnt = self._write(byte_arr)
         self._tcpsocket.waitForReadyRead(1000)
         return cnt
