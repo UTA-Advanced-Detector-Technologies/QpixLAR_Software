@@ -7,6 +7,8 @@ import datetime
 from PyQt5.QtCore import QObject, QByteArray, pyqtSignal, QThread
 from PyQt5.QtNetwork import QTcpSocket, QHostAddress, QUdpSocket
 
+from file_ctrl import datafile
+
 # global defualts to configure connection to socket
 ETH_IP      = '192.168.1.10' # set local ethernet port to 192.169.1.17 to connect
 ETH_PORT    = 7
@@ -47,6 +49,8 @@ class UDPworker(QObject):
         self._udpsocket = QUdpSocket(self)
         self._stopped = True
         self.output_file = None
+
+        self._datafile = datafile()
 
         self._first = 0
 
@@ -99,8 +103,13 @@ class UDPworker(QObject):
             else:
                 self.new_data.emit(datagram)
                 size = len(datagram)
-                nresets = int((size-2)/8)
-                print("reading data")
+                print(f"reading {size} data={datagram}")
+
+                mask = 0
+                timestamp = 0
+                meta = 42
+
+                self._datafile.log_event(mask=mask, timestamp=timestamp, meta=meta)
 
     def run(self):
         if self._first == 0:
@@ -109,8 +118,9 @@ class UDPworker(QObject):
         if not self._udp_connect():
             self.finished.emit()
         else:
+            print("opening the datafile")
             self.output_file = datetime.datetime.now().strftime('./data/%m_%d_%Y_%H_%M_%S.h5')
-            # self.f = open(self.output_file, 'wb')
+            self._datafile.open(self.output_file)
 
 
 class eth_interface(QObject):

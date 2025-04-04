@@ -131,7 +131,7 @@ class GUI(QMainWindow):
 
         # 4x4 channel grid of check boxes which control whether or not the LTC
         # chip at the corresponding channel will be shutdown..
-        l =  QLabel("Shutdown Mask")
+        l =  QLabel("LTC Enable")
         layout.addWidget(l, 0, 0)
         self._shutdownMask = []
         for i in range(4):
@@ -143,12 +143,13 @@ class GUI(QMainWindow):
 
         # 4x4 channel grid of check boxes which control whether or not a trigger
         # will occur if a reset is detected at this pixel
-        l =  QLabel("Trigger Mask")
+        l =  QLabel("Trigger Enable")
         layout.addWidget(l, 5, 0)
         self._triggerMask = []
         for i in range(4):
             for j in range(4):
                 a = QCheckBox(f"{4*i+j}")
+                a.setChecked(1) # enable all bits by default
                 a.stateChanged.connect(self.updateTriggerMask)
                 self._triggerMask.append(a)
                 layout.addWidget(a, 6+i, j)
@@ -330,12 +331,15 @@ class GUI(QMainWindow):
         fileMenu.addAction(exitAct)
         fileMenu.addAction(saveAct)
 
-
     def SaveAs(self):
         """
         file save
         """
         pass
+
+    def __del__(self):
+        print("closing the gui..")
+        self.close_udp.emit()
 
 
 if __name__ == "__main__":
