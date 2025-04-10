@@ -31,3 +31,7 @@ def readEvtFromBytes(qbytearray):
     print("byte array: ", b)
     print(f"mask={mask:04x}, timestamp={timestamp*5e-9:.2e}, metadata={metadata}")
     return mask, timestamp, metadata
+
+##################################################
+#########   Implemented QPix Helpers   ###########
+##################################################

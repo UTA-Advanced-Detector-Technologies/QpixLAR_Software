@@ -289,6 +289,19 @@ class GUI(QMainWindow):
         readVal = self.eth.regWrite(addr=reg_addr, val=val, cmd='CTRL')
         return readVal
 
+    def sendQpix(self, addr, val):
+        """
+        wrapper function which implements the equivalent of the os.system('poke <addr> <val>')
+        from the Penn Version.
+        ARGS:
+            addr : implemented register offset
+            val  : register value to be set at addr
+        Returns:
+            ack value from the typcial transaction with the zynq
+        """
+        readVal = self.eth.regWrite(addr=reg_addr, val=val, cmd='QPIX')
+        return readVal
+
     def readReg(self, cmd: str):
         """
         read a specific asic reg

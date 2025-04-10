@@ -113,7 +113,8 @@ class UDPworker(QObject):
         if not self._udp_connect():
             self.finished.emit()
         else:
-            self.output_file = datetime.datetime.now().strftime('./data/%m_%d_%Y_%H_%M_%S.h5')
+            # self.output_file = datetime.datetime.now().strftime('./data/%m_%d_%Y_%H_%M_%S.h5')
+            self.output_file = datetime.datetime.now().strftime('./data/tmp.h5')
             self._datafile.open(self.output_file)
 
 
@@ -201,7 +202,10 @@ class eth_interface(QObject):
         in the zynq firmware.
         """
         # form byte message
-        args = [cmd, addr, val]
+        if isinstance(val, list):
+            args = [cmd, addr, *val]
+        else:
+            args = [cmd, addr, val]
         if isinstance(args, str): args = args.split(' ')
         if len(cmd) < 4:
             hdr = args[0]+'\0'
@@ -289,9 +293,9 @@ class eth_interface(QObject):
 
     def udp_done(self):
         """
-        signaled from the SAQ worker which manages the UDP socket
+        signaled from the UDP worker which manages the QUdpSocket
         """
-        print("SAQ UDP thread worker is finished!")
+        print("UDP thread worker is finished!")
         self.thread.quit()
 
     def start(self):

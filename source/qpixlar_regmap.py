@@ -22,6 +22,14 @@ QPIX_NUM_REGS = 9
 GOOD_PACKET = 0xc0decafe
 BAD_PACKET = 0xabadadd5
 
+#########################
+## Qpix Register Addrs ##
+#########################
+# Note, there are 9 unique QPix register addresses implemented at Penn,
+# However, some of these are unused in this implementation because of an optimization 
+# in the data readout. The list of registers below represent a mapping between 
+# the magic number system used at Penn towards a more standard approach.
+# REG0 = 
 
 #########################
 ## CTRL Register Addrs ##

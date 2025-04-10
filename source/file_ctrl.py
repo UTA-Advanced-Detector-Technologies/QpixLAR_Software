@@ -18,7 +18,7 @@ class datafile():
         self.f = None
 
     def open(self, file_name):
-        self.f = h5py.File(file_name, "a")
+        self.f = h5py.File(file_name, "w")
         if DATASET not in self.f:
             self.dataset = self.f.create_dataset(DATASET, shape=(0,), maxshape=(None,), dtype=self.dtype)
 
