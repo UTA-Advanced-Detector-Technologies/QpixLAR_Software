@@ -310,6 +310,9 @@ class GUI(QMainWindow):
         Wrapper function to set qpix registers to a known starting state on GUI boot
         """
         print("Qpix Init")
+        addr, val = helper.get_system_reset()
+        self._sendQpix(addr, val)
+
         addr, val = helper.set_system_window_width()
         self._sendQpix(addr, val)
 
@@ -322,9 +325,37 @@ class GUI(QMainWindow):
         addr, val = helper.set_deltaT_select()
         self._sendQpix(addr, val)
 
+        # begin system calibration
+        addr, val = helper.set_system_calibration()
+        self._sendQpix(addr, val)
+
         # control register inits
         self.updateShutdownMask()
         self.updateTriggerMask()
+
+    def QpixSerial(self, interface_num, data_word):
+        """
+        An improved (useful) Implementation of Serial_Interface.py
+        """
+        ctrl_addr, data_addr = helper.get_serial_addrs(interface_num)
+        self._sendQpix(data_addr, data_word)
+
+        # lambda helper
+        load = lambda x: helper.set_ctrl(x)
+
+        # shift register load
+        self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_load))
+        time.sleep(0.5)
+        self._sendQpix(ctrl_addr, 0)
+        time.sleep(0.5)
+
+        self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_xmit))
+        time.sleep(0.01)
+
+        self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_load_data))
+        time.sleep(0.5)
+        self._sendQpix(ctrl_addr, 0)
+
 
     def ResetQpix(self):
         print("reseting the qpix system")

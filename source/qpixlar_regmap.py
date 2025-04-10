@@ -42,6 +42,40 @@ REG8        = QPIX_OFFSET + 0x8 # reset control
 REG9        = QPIX_OFFSET + 0x9 # sample control2
 REGA        = QPIX_OFFSET + 0xA # deltaT select
 
+##################################
+## Qpix Control Register Offset ##
+##################################
+QCTRL_sys_rst        = 0
+QCTRL_opad_ext_POR   = 1
+QCTRL_pulse_rst_ext1 = 2
+QCTRL_pulse_rst_ext2 = 3
+QCTRL_calibrate      = 4
+QCTRL_rst_ext1       = 5
+QCTRL_rst_ext2       = 6
+QCTRL_rst_and_trg    = 7
+QCTRL_opad_ctrl1     = 8
+QCTRL_opad_ctrl2     = 9
+QCTRL_opad_cal_ctrl1 = 10
+QCTRL_opad_cal_ctrl2 = 11
+QCTRL_opad_pul_ctrl1 = 12
+QCTRL_opad_pul_ctrl2 = 13
+QCTRL_opad_startup1  = 24
+QCTRL_opad_startup2  = 25
+
+####################################
+## Qpix Pad Control Offset Values ##
+####################################
+# note that these registers exist for both
+# the standard and cgain channels.
+QPAD_CTRL_rst               = 0
+QPAD_CTRL_load              = 1
+QPAD_CTRL_xmit              = 2
+QPAD_CTRL_opad_serialOutCnt = 4
+QPAD_CTRL_pulse_opad_CLKin2 = 5
+QPAD_CTRL_read_data         = 6
+QPAD_CTRL_load_data         = 8
+QPAD_CTRL_opad_selDefData   = 9  
+
 #########################
 ## CTRL Register Addrs ##
 #########################
