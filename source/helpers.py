@@ -6,6 +6,39 @@ import qpixlar_regmap as REG
 ZTURN_FCLK0 = 200e6
 ZTURN_FCLK1 = 50e6
 
+def reverse_bits(num, bit_size):
+    """
+    reverse bit value of an integer num, considered to have number of bits equal
+    to bit_size
+    """
+    # Convert the number to a binary string with fixed length
+    bit_str = f"{num:0{bit_size}b}"  # Formats number as a bit_size-bit binary string
+    reversed_bit_str = bit_str[::-1]  # Reverse the bit order
+    
+    # Convert back to an integer
+    return int(reversed_bit_str, 2)
+
+class SerialConfig():
+    """
+    Wrapper class to manage the injection of the serial configuration
+    for each of the pads in the qpix ASIC.
+    These default values are taken from the qpixserialinterface.xlsx
+    """
+    def __init__(self, calibration=False):
+        # bit reversal for replen_cur handled in algorithm
+        self.replen_cur    = 0b10101 if not calibration else 0b10101
+        self.curReplen     = reverse_bits(0b010, 3) if not calibration else reverse_bits(0b011, 3)
+        self.curCmp        = reverse_bits(0b011, 3) if not calibration else reverse_bits(0b011, 3)
+        self.curAmp        = reverse_bits(0b011, 3) if not calibration else reverse_bits(0b011, 3)
+        self.curInt        = reverse_bits(0b011, 3) if not calibration else reverse_bits(0b011, 3)
+        self.enable        = reverse_bits(0x03,  8) if not calibration else reverse_bits(0b011, 3)
+        self.clk_source_ro = True if not calibration else True
+        self.dbl_bar       = False if not calibration else True
+        self.enableRingOsc = True if not calibration else True
+        self.ringOsc_f     = reverse_bits(0b10,  8) if not calibration else reverse_bits(0b00,  8)
+        self.LVDS_drvr     = True if not calibration else True
+        self.enableCalB    = True if not calibration else False
+
 def calcMaskFromCheckboxes(checkBoxList):
     s = [ 1<<i if checkBoxList[i].isChecked() else 0 for i in range(len(checkBoxList))]
     mask = sum(s)
@@ -76,9 +109,7 @@ def get_serial_addrs(interface_num=1):
         data_addr = REG.REG4
     return ctrl_addr, data_addr
 
-def make_serial_word(replen_cur=0b01011, curReplen=0b010, curCmp=0b0011, curAmp=0b011, curInt=0b011, 
-                     enable=0x03, clk_source_ro=True, dbl_bar=False, enableRingOsc=True, ringOsc_f=0b10,
-                     LVDS_drvr=True, enableCalB=True):
+def make_serial_word(calibration=False):
     """
     wrapper function to help prevent the shameful implmentation done by Penn..
     NOTE: under no circumstances should running python code (after 5+ years
@@ -88,25 +119,28 @@ def make_serial_word(replen_cur=0b01011, curReplen=0b010, curCmp=0b0011, curAmp=
     We should all take this opportunity to reflect on the need to take pride in
     our work.
     """
+    a = SerialConfig(calibration=calibration)
     data_word = 0
 
-    repl_top = (replen_cur & (0xf << 1)) >> 1
-    repl_bot = replen_cur & 0b1
+    # this is a fun feature
+    val = (a.replen_cur & (0xf << 1))
+    repl_top = reverse_bits((val >> 1), 4)
+    repl_bot =  a.replen_cur & 0b1
 
     # build the data word
-    data_word |= repl_top
-    data_word |= (curReplen & 0x7)    << 4
-    data_word |= (curCmp    & 0x7)    << 7
-    data_word |= (curAmp    & 0x7)    << 9 
-    data_word |= (curInt    & 0x7)    << 13
-    data_word |= (enable    & 0xff)   << 16
-    data_word |= (repl_bot        )   << 24
-    data_word |= (int(clk_source_ro)) << 25
-    data_word |= (int(dbl_bar))       << 26
-    data_word |= (ringOsc_f & 0x3)    << 27
-    data_word |= (int(enableRingOsc)) << 29
-    data_word |= (int(LVDS_drvr))     << 30
-    data_word |= (int(enableCalB))    << 31
+    data_word |= repl_top               << (31 -  3)
+    data_word |= (a.curReplen & 0x7)    << (31 -  6)
+    data_word |= (a.curCmp    & 0x7)    << (31 -  9)
+    data_word |= (a.curAmp    & 0x7)    << (31 - 12)
+    data_word |= (a.curInt    & 0x7)    << (31 - 15)
+    data_word |= (a.enable    & 0xff)   << (31 - 23)
+    data_word |= (repl_bot          )   << (31 - 24)
+    data_word |= (int(a.clk_source_ro)) << (31 - 25)
+    data_word |= (int(a.dbl_bar))       << (31 - 26)
+    data_word |= (a.ringOsc_f & 0x3)    << (31 - 28)
+    data_word |= (int(a.enableRingOsc)) << (31 - 29)
+    data_word |= (int(a.LVDS_drvr))     << (31 - 30)
+    data_word |= (int(a.enableCalB))    << (31 - 31)
 
     return data_word
 
@@ -147,3 +181,15 @@ def set_ctrl(offset):
     registers.
     """
     return 1<<offset
+
+
+def main():
+    """
+    Test generic functions easily here by running this through a debugger.
+    """
+    data_word = make_serial_word()
+    print(f"data_word = {data_word:08x}")
+
+
+if __name__ == "__main__":
+    main()
