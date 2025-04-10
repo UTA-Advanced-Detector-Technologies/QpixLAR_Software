@@ -13,6 +13,7 @@ from eth_interface import (eth_interface, EthBadAddr, DEFAULT_PACKET_SIZE)
 
 import qpixlar_regmap as REG
 from helpers import calcMaskFromCheckboxes
+import helpers as helper
 
 class GUI(QMainWindow):
 
@@ -45,6 +46,8 @@ class GUI(QMainWindow):
         self.setCentralWidget(self.tabW)
         self.show()
 
+        self.InitQpix()
+
     def _makeEthlayout(self):
         """
         Wrapper function to store all of the Eth widgets into a single layout,
@@ -60,8 +63,8 @@ class GUI(QMainWindow):
         layout.addWidget(btn_read_i2c, 0, 0)
 
         btn_read_qpix = QPushButton()
-        btn_read_qpix.setText('QPIX')
-        btn_read_qpix.clicked.connect(lambda x: self.readReg('QPIX'))
+        btn_read_qpix.setText('Reset QPIX')
+        btn_read_qpix.clicked.connect(lambda x: self.ResetQpix())
         layout.addWidget(btn_read_qpix, 0, 2)
 
         btn_read_ctrl = QPushButton()
@@ -289,7 +292,7 @@ class GUI(QMainWindow):
         readVal = self.eth.regWrite(addr=reg_addr, val=val, cmd='CTRL')
         return readVal
 
-    def sendQpix(self, addr, val):
+    def _sendQpix(self, addr, val):
         """
         wrapper function which implements the equivalent of the os.system('poke <addr> <val>')
         from the Penn Version.
@@ -299,8 +302,34 @@ class GUI(QMainWindow):
         Returns:
             ack value from the typcial transaction with the zynq
         """
-        readVal = self.eth.regWrite(addr=reg_addr, val=val, cmd='QPIX')
+        readVal = self.eth.regWrite(addr=addr, val=val, cmd='QPIX')
         return readVal
+
+    def InitQpix(self):
+        """
+        Wrapper function to set qpix registers to a known starting state on GUI boot
+        """
+        print("Qpix Init")
+        addr, val = helper.set_system_window_width()
+        self._sendQpix(addr, val)
+
+        addr, val = helper.set_system_reset_width()
+        self._sendQpix(addr, val)
+
+        addr, val = helper.set_deltaT_delay()
+        self._sendQpix(addr, val)
+
+        addr, val = helper.set_deltaT_select()
+        self._sendQpix(addr, val)
+
+        # control register inits
+        self.updateShutdownMask()
+        self.updateTriggerMask()
+
+    def ResetQpix(self):
+        print("reseting the qpix system")
+        addr, val = helper.get_system_reset()
+        self._sendQpix(addr, val)
 
     def readReg(self, cmd: str):
         """

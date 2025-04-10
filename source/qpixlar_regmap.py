@@ -29,7 +29,18 @@ BAD_PACKET = 0xabadadd5
 # However, some of these are unused in this implementation because of an optimization 
 # in the data readout. The list of registers below represent a mapping between 
 # the magic number system used at Penn towards a more standard approach.
-# REG0 = 
+QPIX_OFFSET = 0x000
+REG0        = QPIX_OFFSET + 0x0 # ctrl reg
+REG1        = QPIX_OFFSET + 0x1 # data1 ctrl
+REG2        = QPIX_OFFSET + 0x2 # data1
+REG3        = QPIX_OFFSET + 0x3 # data2 ctrl
+REG4        = QPIX_OFFSET + 0x4 # data2
+REG5        = QPIX_OFFSET + 0x5 # trigger control - UNUSED
+REG6        = QPIX_OFFSET + 0x6 # fifo control    - UNUSED
+REG7        = QPIX_OFFSET + 0x7 # sample control
+REG8        = QPIX_OFFSET + 0x8 # reset control
+REG9        = QPIX_OFFSET + 0x9 # sample control2
+REGA        = QPIX_OFFSET + 0xA # deltaT select
 
 #########################
 ## CTRL Register Addrs ##
