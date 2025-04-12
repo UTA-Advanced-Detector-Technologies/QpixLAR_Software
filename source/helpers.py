@@ -131,11 +131,10 @@ def get_serial_addrs(interface_num=1):
         data_addr = REG.REG4
     return ctrl_addr, data_addr
 
-def make_serial_word(calibration=False):
+def make_serial_word(a: SerialConfig()):
     """
     ..This removes the need of an excel file and magic numbers..
     """
-    a = SerialConfig(calibration=calibration)
     data_word = 0
 
     # this is a fun feature
@@ -232,7 +231,8 @@ def main():
     """
     Test generic functions easily here by running this through a debugger.
     """
-    data_word = make_serial_word()
+    a = SerialConfig()
+    data_word = make_serial_word(a)
     print(f"data_word = {data_word:08x}")
 
 

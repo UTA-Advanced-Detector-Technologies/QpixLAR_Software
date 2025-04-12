@@ -43,9 +43,9 @@ class GUI(QMainWindow):
 
         self.tabW.addTab(self._makeMaskLayout(), "Mask Ctrl")
 
-        self.tabW.addTab(self._makeCTRLayout(), "Data1 Ctrl")
+        self.tabW.addTab(self._makeCTRLayout(), "Standard Ctrl")
 
-        self.tabW.addTab(self._makeCTRLayout(1), "Data2 Ctrl")
+        self.tabW.addTab(self._makeCTRLayout(1), "C-Gain Ctrl")
 
         # show the main window
         self.setCentralWidget(self.tabW)
@@ -194,7 +194,8 @@ class GUI(QMainWindow):
 
         # bool flags from the pad_ctrl
         if not hasattr(self, '_BoolBoxes'):
-            self._BoolBoxes = [{}]*2
+            print("repping the lens")
+            self._BoolBoxes = [{}, {}]
         addBox(layout, num_pad, WN.CLK_SRC.value, 0)
         addBox(layout, num_pad, WN.DBL_BAR.value, 1)
         addBox(layout, num_pad, WN.RNG_OSC.value, 2)
@@ -213,7 +214,7 @@ class GUI(QMainWindow):
             layout.addWidget(placeholder_widget, i, 1)
 
         if not hasattr(self, '_repLenBoxes'):
-            self._repLenBoxes = [{}]*2
+            self._repLenBoxes = [{}, {}]
         addBoxArray(layout, num_pad, WN.REP_LEN, 0, 5)
         addBoxArray(layout, num_pad, WN.CUR_LEN, 1, 3)
         addBoxArray(layout, num_pad, WN.CUR_CMP, 2, 3)
@@ -230,9 +231,38 @@ class GUI(QMainWindow):
         when any of these values change update the corresponding pad control
         """
         assert num_pad in [0,1], f"update pad ctrl be equal to 1 or 2 not {num_pad}"
-        print(f"updating pad control={num_pad}")
-    
+        ser_word = self.pads_ctrl[num_pad]
 
+        def makeBit(boxDict, name, reverse_sz=0):
+            boxes = boxDict[name.value]
+            val = [1<<i if box.isChecked() else 0 for i, box in enumerate(boxes)]
+            bits = sum(val)
+            if reverse_sz>0:
+                bits = helper.reverse_bits(bits, reverse_sz)
+            return bits
+
+        # update bit ranges
+        lenBoxes = self._repLenBoxes[num_pad]
+        ser_word.replen_cur = makeBit(lenBoxes, WN.REP_LEN)
+        ser_word.curReplen = makeBit(lenBoxes, WN.CUR_LEN, 3)
+        ser_word.curCmp = makeBit(lenBoxes, WN.CUR_CMP, 3)
+        ser_word.curAmp = makeBit(lenBoxes, WN.CUR_AMP, 3)
+        ser_word.curInt = makeBit(lenBoxes, WN.CUR_INT, 3)
+        ser_word.enable = makeBit(lenBoxes, WN.ENABLE, 8)
+        ser_word.ringOsc_f = makeBit(lenBoxes, WN.RING_OS, 2)
+
+        # update bools
+        boolBoxes = self._BoolBoxes[num_pad]
+        ser_word.clk_source_ro = boolBoxes[WN.CLK_SRC.value].isChecked()
+        ser_word.dbl_bar = boolBoxes[WN.DBL_BAR.value].isChecked()
+        ser_word.enableRingOsc = boolBoxes[WN.RNG_OSC.value].isChecked()
+        ser_word.LVDS_drvr = boolBoxes[WN.LVDS_DR.value].isChecked()
+        ser_word.enableCalB = boolBoxes[WN.EN_CALB.value].isChecked()
+
+        # send
+        data = helper.make_serial_word(ser_word)
+        print(f"data = {data:08x}")
+    
     def updateShutdownMask(self):
         """
         update the LTC shutdown pins on a checkbox value change
@@ -428,7 +458,6 @@ class GUI(QMainWindow):
         self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_load_data))
         time.sleep(0.5)
         self._sendQpix(ctrl_addr, 0)
-
 
     def ResetQpix(self):
         print("reseting the qpix system")
