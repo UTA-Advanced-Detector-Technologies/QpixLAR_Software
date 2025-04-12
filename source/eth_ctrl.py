@@ -263,8 +263,8 @@ class GUI(QMainWindow):
 
         # update and send
         data = helper.make_serial_word(ser_word)
-        print(f"data = {data:08x}")
         self.pads_ctrl[num_pad] = ser_word
+        self.QpixSerial(num_pad+1, data)
     
     def _assignDefaultPadCtrl(self, num_pad):
         """
@@ -496,17 +496,17 @@ class GUI(QMainWindow):
         # lambda helper
         load = lambda x: helper.set_ctrl(x)
 
-        # shift register load
+        # shift register load, piso requirement
         self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_load))
-        time.sleep(0.5)
+        time.sleep(0.005)
         self._sendQpix(ctrl_addr, 0)
-        time.sleep(0.5)
+        time.sleep(0.005)
 
         self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_xmit))
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_load_data))
-        time.sleep(0.5)
+        time.sleep(0.005)
         self._sendQpix(ctrl_addr, 0)
 
     def ResetQpix(self):
