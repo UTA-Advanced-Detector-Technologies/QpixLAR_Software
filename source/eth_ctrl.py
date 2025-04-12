@@ -14,6 +14,7 @@ from eth_interface import (eth_interface, EthBadAddr, DEFAULT_PACKET_SIZE)
 import qpixlar_regmap as REG
 from helpers import calcMaskFromCheckboxes
 import helpers as helper
+from helpers import WidgetNames as WN
 
 class GUI(QMainWindow):
 
@@ -40,7 +41,11 @@ class GUI(QMainWindow):
         self.tabW = QTabWidget()
         self.tabW.addTab(self._makeEthlayout(), "ETH")
 
-        self.tabW.addTab(self._makeCTRLayout(), "CTRL")
+        self.tabW.addTab(self._makeMaskLayout(), "Mask Ctrl")
+
+        self.tabW.addTab(self._makeCTRLayout(), "Data1 Ctrl")
+
+        self.tabW.addTab(self._makeCTRLayout(1), "Data2 Ctrl")
 
         # show the main window
         self.setCentralWidget(self.tabW)
@@ -125,7 +130,7 @@ class GUI(QMainWindow):
         self._qdbPage.setLayout(layout)
         return self._qdbPage
 
-    def _makeCTRLayout(self):
+    def _makeMaskLayout(self):
         """
         Helper wrapped to put testing click functions on a separate tab for custom uses
         """
@@ -159,6 +164,74 @@ class GUI(QMainWindow):
 
         self._testPage.setLayout(layout)
         return self._testPage
+
+    def _makeCTRLayout(self, num_pad=0):
+        """
+        Wrapper function that exposes the dataword controls for one of the qpix
+        asic pad control registers
+
+        Changing any of the values here will change the value of the pad ctrl register
+        immediately
+        ARGS:
+            num_pad : int select the pad number, either 1 or 2
+        """
+        assert num_pad in [0,1], f"pad number must be equal to 1 or 2 not {num_pad}"
+        self._testPage = QWidget()
+
+        # ensure that we have some initialization of the serial
+        # config for both of the ports
+        if not hasattr(self, 'pads_ctrl'):
+            self.pads_ctrl = [helper.SerialConfig(), helper.SerialConfig()]
+        pad_ctrl = self.pads_ctrl[num_pad-1]
+
+        layout = QGridLayout()
+
+        def addBox(layout, num_pad, name, i):
+            self._BoolBoxes[num_pad][name] = QCheckBox(name)
+            a = self._BoolBoxes[num_pad][name]
+            a.stateChanged.connect(lambda x: self.updatePadCtrlReg(num_pad))
+            layout.addWidget(a, i, 0)
+
+        # bool flags from the pad_ctrl
+        if not hasattr(self, '_BoolBoxes'):
+            self._BoolBoxes = [{}]*2
+        addBox(layout, num_pad, WN.CLK_SRC.value, 0)
+        addBox(layout, num_pad, WN.DBL_BAR.value, 1)
+        addBox(layout, num_pad, WN.RNG_OSC.value, 2)
+        addBox(layout, num_pad, WN.LVDS_DR.value, 3)
+        addBox(layout, num_pad, WN.EN_CALB.value, 4)
+
+        # replen_cur control
+        def addBoxArray(layout, num_pad, name, i, sz):
+            hbox_layout = QHBoxLayout()
+            self._repLenBoxes[num_pad][name.value] = [QCheckBox(f"{name.value}{k}") for k in range(sz)]
+            for box in self._repLenBoxes[num_pad][name.value]:
+                hbox_layout.addWidget(box)
+                box.stateChanged.connect(lambda x: self.updatePadCtrlReg(num_pad))
+            placeholder_widget = QWidget()
+            placeholder_widget.setLayout(hbox_layout)
+            layout.addWidget(placeholder_widget, i, 1)
+
+        if not hasattr(self, '_repLenBoxes'):
+            self._repLenBoxes = [{}]*2
+        addBoxArray(layout, num_pad, WN.REP_LEN, 0, 5)
+        addBoxArray(layout, num_pad, WN.CUR_LEN, 1, 3)
+        addBoxArray(layout, num_pad, WN.CUR_CMP, 2, 3)
+        addBoxArray(layout, num_pad, WN.CUR_AMP, 3, 3)
+        addBoxArray(layout, num_pad, WN.CUR_INT, 4, 3)
+        addBoxArray(layout, num_pad, WN.ENABLE,  5, 8)
+        addBoxArray(layout, num_pad, WN.RING_OS, 6, 2)
+
+        self._testPage.setLayout(layout)
+        return self._testPage
+
+    def updatePadCtrlReg(self, num_pad):
+        """
+        when any of these values change update the corresponding pad control
+        """
+        assert num_pad in [0,1], f"update pad ctrl be equal to 1 or 2 not {num_pad}"
+        print(f"updating pad control={num_pad}")
+    
 
     def updateShutdownMask(self):
         """

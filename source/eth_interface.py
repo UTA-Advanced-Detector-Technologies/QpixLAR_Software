@@ -149,7 +149,7 @@ class eth_interface(QObject):
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.udp_done)
-        self.thread.start()
+        # self.thread.start()
 
         # create the tcp socket
         self._tcpsocket = QTcpSocket(self)

@@ -3,6 +3,28 @@ import numpy as np
 import struct
 import qpixlar_regmap as REG
 
+from enum import Enum
+
+class WidgetNames(Enum):
+    """
+    wrapper class to manage accessing widgets 
+    for controlling the pad control register
+    """
+    # bool names
+    CLK_SRC = "Clock Source"
+    DBL_BAR = "Dbl Bar"
+    RNG_OSC = "Ring Osc"
+    LVDS_DR = "LVDS_drvr"
+    EN_CALB = "EnableCalB"
+    # box names
+    REP_LEN = "RepLen"
+    CUR_LEN = "CurLen"
+    CUR_CMP = "CurCmp"
+    CUR_AMP = "CurAMP"
+    CUR_INT = "CurInt"
+    ENABLE  = ""
+    RING_OS = "RingOsc_f"
+
 ZTURN_FCLK0 = 200e6
 ZTURN_FCLK1 = 50e6
 
@@ -111,13 +133,7 @@ def get_serial_addrs(interface_num=1):
 
 def make_serial_word(calibration=False):
     """
-    wrapper function to help prevent the shameful implmentation done by Penn..
-    NOTE: under no circumstances should running python code (after 5+ years
-    of development) require an external excel sheet to run, whereby a user 
-    copies produced magic numbers into a string to control the DUT..
-
-    We should all take this opportunity to reflect on the need to take pride in
-    our work.
+    ..This removes the need of an excel file and magic numbers..
     """
     a = SerialConfig(calibration=calibration)
     data_word = 0
@@ -143,6 +159,35 @@ def make_serial_word(calibration=False):
     data_word |= (int(a.enableCalB))    << (31 - 31)
 
     return data_word
+
+def decode_serial_word(magic_word):
+    """
+    Helper function to figure out what the 'magic scripts' did
+    """
+    ser_word = SerialConfig()
+
+    # this is a fun feature
+    val = (a.replen_cur & (0xf << 1))
+    repl_top = reverse_bits((val >> 1), 4)
+    repl_bot =  a.replen_cur & 0b1
+
+    # build the data word
+    repl_top               = reverse_bits((magic_word >> (31 -  3)) & 0xf, 4)
+    ser_word.curReplen     = reverse_bits((magic_word >> (31 -  6)) & 0x7, 3)
+    ser_word.curCmp        = reverse_bits((magic_word >> (31 -  9)) & 0x7, 3)
+    ser_word.curAmp        = reverse_bits((magic_word >> (31 - 12)) & 0x7, 3)
+    ser_word.curInt        = reverse_bits((magic_word >> (31 - 15)) & 0x7, 3)
+    ser_word.enable        = reverse_bits((magic_word >> (31 - 23)) & 0xff, 8)
+    repl_bot               = int((magic_word >> (31 - 24)) & 1)
+    ser_word.clk_source_ro = int((magic_word >> (31 - 25)) & 1)
+    ser_word.dbl_bar       = int((magic_word >> (31 - 26)) & 1)
+    ser_word.ringOsc_f     = reverse_bits((magic_word >> (31 - 28)) & 0x3, 2)
+    ser_word.enableRingOsc = int((magic_word >> (31 - 29)) & 1)
+    ser_word.LVDS_drvr     = int((magic_word >> (31 - 30)) & 1)
+    ser_word.enableCalB    = int((magic_word >> (31 - 31)) & 1)
+    ser_word.replen_cur = 0
+
+    print(ser_word)
 
 def set_system_reset_width(t_us=25):
     """
