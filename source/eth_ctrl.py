@@ -47,6 +47,9 @@ class GUI(QMainWindow):
 
         self.tabW.addTab(self._makeCTRLayout(1), "C-Gain Ctrl")
 
+        self._assignDefaultPadCtrl(0)
+        self._assignDefaultPadCtrl(1)
+
         # show the main window
         self.setCentralWidget(self.tabW)
         self.show()
@@ -189,12 +192,10 @@ class GUI(QMainWindow):
         def addBox(layout, num_pad, name, i):
             self._BoolBoxes[num_pad][name] = QCheckBox(name)
             a = self._BoolBoxes[num_pad][name]
-            a.stateChanged.connect(lambda x: self.updatePadCtrlReg(num_pad))
             layout.addWidget(a, i, 0)
 
         # bool flags from the pad_ctrl
         if not hasattr(self, '_BoolBoxes'):
-            print("repping the lens")
             self._BoolBoxes = [{}, {}]
         addBox(layout, num_pad, WN.CLK_SRC.value, 0)
         addBox(layout, num_pad, WN.DBL_BAR.value, 1)
@@ -208,7 +209,6 @@ class GUI(QMainWindow):
             self._repLenBoxes[num_pad][name.value] = [QCheckBox(f"{name.value}{k}") for k in range(sz)]
             for box in self._repLenBoxes[num_pad][name.value]:
                 hbox_layout.addWidget(box)
-                box.stateChanged.connect(lambda x: self.updatePadCtrlReg(num_pad))
             placeholder_widget = QWidget()
             placeholder_widget.setLayout(hbox_layout)
             layout.addWidget(placeholder_widget, i, 1)
@@ -233,10 +233,12 @@ class GUI(QMainWindow):
         assert num_pad in [0,1], f"update pad ctrl be equal to 1 or 2 not {num_pad}"
         ser_word = self.pads_ctrl[num_pad]
 
+        # helper to extract bit values from boxes based on key name
         def makeBit(boxDict, name, reverse_sz=0):
             boxes = boxDict[name.value]
             val = [1<<i if box.isChecked() else 0 for i, box in enumerate(boxes)]
             bits = sum(val)
+            # replen doesn't need to be reversed, but all other bits do
             if reverse_sz>0:
                 bits = helper.reverse_bits(bits, reverse_sz)
             return bits
@@ -259,10 +261,58 @@ class GUI(QMainWindow):
         ser_word.LVDS_drvr = boolBoxes[WN.LVDS_DR.value].isChecked()
         ser_word.enableCalB = boolBoxes[WN.EN_CALB.value].isChecked()
 
+        # update and send
+        data = helper.make_serial_word(ser_word)
+        print(f"data = {data:08x}")
+        self.pads_ctrl[num_pad] = ser_word
+    
+    def _assignDefaultPadCtrl(self, num_pad):
+        """
+        helper function to use defaults from SerialConfig default constructor
+        to set initial values for the appropriate check boxes.
+
+        This function is the behavioral equivalent of the inverse of 'self.updatePadCtrlReg'
+        """
+        assert num_pad in [0,1], f"update pad ctrl be equal to 1 or 2 not {num_pad}"
+        ser_word = self.pads_ctrl[num_pad]
+
+        # helper to extract bit values from boxes based on key name
+        def setChecked(boxDict, name, bits, reverse_sz=0):
+            boxes = boxDict[name.value]
+            if reverse_sz>0:
+                bits = helper.reverse_bits(bits, reverse_sz)
+            _ = [box.setChecked(1) if 1<<i & bits else box.setChecked(0) 
+                                   for i, box in enumerate(boxes)]
+
+        # update bit ranges
+        lenBoxes = self._repLenBoxes[num_pad]
+        setChecked(lenBoxes, WN.REP_LEN, ser_word.replen_cur)
+        setChecked(lenBoxes, WN.CUR_LEN, ser_word.curReplen, 3)
+        setChecked(lenBoxes, WN.CUR_CMP, ser_word.curCmp, 3)
+        setChecked(lenBoxes, WN.CUR_AMP, ser_word.curAmp, 3)
+        setChecked(lenBoxes, WN.CUR_INT, ser_word.curInt, 3)
+        setChecked(lenBoxes, WN.ENABLE, ser_word.enable, 8)
+        setChecked(lenBoxes, WN.RING_OS, ser_word.ringOsc_f, 2)
+        # after all default assignments, now we can connect boxes
+        for name, boxes in lenBoxes.items():
+            for box in boxes:
+                box.stateChanged.connect(lambda x: self.updatePadCtrlReg(num_pad))
+
+        # update bools
+        boolBoxes = self._BoolBoxes[num_pad]
+        boolBoxes[WN.CLK_SRC.value].setChecked(ser_word.clk_source_ro)
+        boolBoxes[WN.DBL_BAR.value].setChecked(ser_word.dbl_bar)
+        boolBoxes[WN.RNG_OSC.value].setChecked(ser_word.enableRingOsc)
+        boolBoxes[WN.LVDS_DR.value].setChecked(ser_word.LVDS_drvr)
+        boolBoxes[WN.EN_CALB.value].setChecked(ser_word.enableCalB)
+        # after all default assignments, now we can connect boxes
+        for name, box in boolBoxes.items():
+            box.stateChanged.connect(lambda x: self.updatePadCtrlReg(num_pad))
+
         # send
         data = helper.make_serial_word(ser_word)
         print(f"data = {data:08x}")
-    
+
     def updateShutdownMask(self):
         """
         update the LTC shutdown pins on a checkbox value change
