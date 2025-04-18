@@ -107,11 +107,35 @@ def set_system_calibration():
 def set_system_clear():
     return REG.REG0, 0
 
-def set_system_window_width(t_us=25):
+def set_system_window_width(n_clks=1000):
     """
-    give a time in microseconds to set the reset window width
+    sets number of 50 MHz clock ticks to sample data for
     """
-    return REG.REG8, int((t_us*1e-6) * ZTURN_FCLK1)
+    return REG.REG7, int(n_clks)
+
+def set_system_reset_width(t_us=5, cal_gap_cnts=5):
+    """
+    reset register is an double duty register, which stores the
+    reset width and the rst cal gap
+    """
+    rst_width = int((t_us*1e-6) * ZTURN_FCLK1)
+    cal_gap = (cal_gap_cnts & 0xffff) << 16
+    return REG.REG8, cal_gap | rst_width
+
+def get_integrator_pads(pads=[1,2]):
+    """
+    Implements the equivalent of Integrator_Rst_fix.py but returns the address
+    and appropriate bits to set to reset the pads lists in pads
+    pads is a list containing elements of 1 and/or 2.
+    """
+    assert len(pads) >= 2 and len(pads) > 0, "pads must have a length of one or two" 
+    assert all(element in [1,2] for element in pads), "pads can only contain Pad1 (standard), Pad2 (C-gain)"
+    data = 0
+    if 1 in pads:
+        data |= REG.QCTRL_pulse_rst_ext1
+    if 2 in pads:
+        data |= REG.QCTRL_pulse_rst_ext2
+    return REG.REG0, data
 
 def get_serial_addrs(interface_num=1):
     """
@@ -188,13 +212,6 @@ def decode_serial_word(magic_word):
 
     print(ser_word)
 
-def set_system_reset_width(t_us=25):
-    """
-    reset register is an double duty register, which stores
-    the 
-    """
-    return REG.REG9, int((t_us*1e-6) * ZTURN_FCLK1)
-    
 def set_deltaT_delay(t_us=10, enable=False):
     """
     reset register is an double duty register, which stores
@@ -225,7 +242,6 @@ def set_ctrl(offset):
     registers.
     """
     return 1<<offset
-
 
 def main():
     """

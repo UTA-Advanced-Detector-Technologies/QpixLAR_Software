@@ -22,6 +22,8 @@ QPIX_NUM_REGS = 9
 GOOD_PACKET = 0xc0decafe
 BAD_PACKET = 0xabadadd5
 
+FPGA_ID_ADDR = 0x1018
+
 #########################
 ## Qpix Register Addrs ##
 #########################
@@ -38,7 +40,7 @@ REG4        = QPIX_OFFSET + 0x4 # data2
 REG5        = QPIX_OFFSET + 0x5 # trigger control - UNUSED
 REG6        = QPIX_OFFSET + 0x6 # fifo control    - UNUSED
 REG7        = QPIX_OFFSET + 0x7 # sample control
-REG8        = QPIX_OFFSET + 0x8 # reset control
+REG8        = QPIX_OFFSET + 0x8 # reset width control
 REG9        = QPIX_OFFSET + 0x9 # sample control2
 REGA        = QPIX_OFFSET + 0xA # deltaT select
 
@@ -59,6 +61,8 @@ QCTRL_opad_cal_ctrl1 = 10
 QCTRL_opad_cal_ctrl2 = 11
 QCTRL_opad_pul_ctrl1 = 12
 QCTRL_opad_pul_ctrl2 = 13
+QCTRL_opad_clk_rpen1 = 16
+QCTRL_opad_clk_rpen2 = 17
 QCTRL_opad_startup1  = 24
 QCTRL_opad_startup2  = 25
 

@@ -65,10 +65,15 @@ class GUI(QMainWindow):
         self._qdbPage = QWidget()
         layout = QGridLayout()
 
-        btn_read_i2c = QPushButton()
-        btn_read_i2c.setText('i2c')
-        btn_read_i2c.clicked.connect(lambda x: self.readReg('I2C'))
-        layout.addWidget(btn_read_i2c, 0, 0)
+        self.check_kick = QCheckBox('Kick Start')
+        self.check_kick.stateChanged.connect(lambda x: self.qpix_kickstart())
+        layout.addWidget(self.check_kick, 0, 0)
+
+        self.startup = QPushButton()
+        self.startup.setText('Startup')
+        self.startup.clicked.connect(lambda x: self.qpix_startup())
+        layout.addWidget(self.startup, 0, 1)
+
 
         btn_read_qpix = QPushButton()
         btn_read_qpix.setText('Reset QPIX')
@@ -103,7 +108,7 @@ class GUI(QMainWindow):
         # control to set VCM1
         self.vcm_addr1 = QDoubleSpinBox()
         self.vcm_addr1.setRange(0.0, 1.0)  # Set range for the float value
-        self.vcm_addr1.setSingleStep(0.01) 
+        self.vcm_addr1.setSingleStep(0.001) 
         self.vcm_addr1.setValue(0.5)
         self.vcm_addr1.valueChanged.connect(self.readI2C_1)
         self._laddr = QLabel("VCM1")
@@ -113,7 +118,7 @@ class GUI(QMainWindow):
         # control to set VCM2
         self.vcm_addr2 = QDoubleSpinBox()
         self.vcm_addr2.setRange(0.0, 1.0)  # Set range for the float value
-        self.vcm_addr2.setSingleStep(0.01) 
+        self.vcm_addr2.setSingleStep(0.001) 
         self.vcm_addr2.setValue(0.5)
         self.vcm_addr2.valueChanged.connect(self.readI2C_2)
         self._laddr = QLabel("VCM2")
@@ -458,29 +463,55 @@ class GUI(QMainWindow):
         readVal = self.eth.regWrite(addr=addr, val=val, cmd='QPIX')
         return readVal
 
+    def _getQpix(self, addr, val):
+        """
+        wrapper function which implements the equivalent of the os.system('peek <addr>')
+        from the Penn Version.
+        ARGS:
+            addr : implemented register offset
+        Returns:
+            val  : 32 bit register value seen at the register
+        """
+        addr |= 1<<31 # must set read bit high for the embedded firmware to recognize this as a read
+        readVal = self.eth.regRead(addr=addr, cmd='QPIX')
+        return readVal
+
     def InitQpix(self):
         """
-        Wrapper function to set qpix registers to a known starting state on GUI boot
+        Wrapper function to set qpix registers to a known starting state on GUI
+        boot
         """
         print("Qpix Init")
+        self.vcm_addr1.setValue(0.780)
+        self.vcm_addr2.setValue(0.875)
+
         addr, val = helper.get_system_reset()
         self._sendQpix(addr, val)
 
+        # REG7 Config
         addr, val = helper.set_system_window_width()
         self._sendQpix(addr, val)
 
+        # REG8 Config
         addr, val = helper.set_system_reset_width()
         self._sendQpix(addr, val)
 
+        # REG9 Config
         addr, val = helper.set_deltaT_delay()
         self._sendQpix(addr, val)
 
+        # REGA Config
         addr, val = helper.set_deltaT_select()
         self._sendQpix(addr, val)
 
         # begin system calibration
-        addr, val = helper.set_system_calibration()
+        # addr, val = helper.set_system_calibration()
+        # self._sendQpix(addr, val)
+
+        addr, val = helper.set_system_clear()
         self._sendQpix(addr, val)
+
+        self.qpix_integrator_rst()
 
         # control register inits
         self.updateShutdownMask()
@@ -491,12 +522,14 @@ class GUI(QMainWindow):
         An improved (useful) Implementation of Serial_Interface.py
         """
         ctrl_addr, data_addr = helper.get_serial_addrs(interface_num)
+        print(f"QSerial: 0x{data_word:08x}")
         self._sendQpix(data_addr, data_word)
 
         # lambda helper
         load = lambda x: helper.set_ctrl(x)
 
         # shift register load, piso requirement
+        time.sleep(0.005)
         self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_load))
         time.sleep(0.005)
         self._sendQpix(ctrl_addr, 0)
@@ -532,6 +565,53 @@ class GUI(QMainWindow):
         print(f"writing val: 0x{val:04x}")
         self.eth.regWrite(addr, val)
 
+    ########################
+    ## Wrapper C Commands ##
+    ########################
+    def qpix_kickstart(self):
+        """
+        send the equivalent of the qpix kickstart script
+        """
+        if self.check_kick.isChecked():
+            addr, val = REG.REG0, (1<<REG.QCTRL_opad_startup1) | (1<<REG.QCTRL_opad_startup2)
+            self._sendQpix(addr, val)
+        else:
+            addr, val = helper.set_system_clear()
+            self._sendQpix(addr, val)
+
+    def qpix_enable_cal(self):
+        """
+        send the equivalent of the qpix kickstart script
+        """
+        if self.check_kick.isChecked():
+            addr, val = REG.REG0, (1<<REG.QCTRL_opad_startup1) | (1<<REG.QCTRL_opad_startup2)
+            self._sendQpix(addr, val)
+        else:
+            addr, val = helper.set_system_clear()
+            self._sendQpix(addr, val)
+
+    def qpix_startup(self):
+        """
+        send the equivalent of the qpix startup script
+        """
+        addr, val = helper.get_system_reset()
+        self._sendQpix(addr, val)
+        time.sleep(0.1)
+        addr, val = helper.set_system_clear()
+        self._sendQpix(addr, val)
+
+    def qpix_integrator_rst(self, pads=[1,2]):
+        """
+        implements the equivalent off Integrator_Rst_Fix.py 
+        """
+        addr, val = helper.get_integrator_pads(pads)
+        self._sendQpix(addr, val)
+        time.sleep(0.1)
+        addr = REG.REG0
+        val = (1<<REG.QCTRL_opad_clk_rpen1) | (1<<REG.QCTRL_opad_clk_rpen2)
+        self._sendQpix(addr, val)
+
+
     ###########################
     ## GUI specific Commands ##
     ###########################
@@ -565,10 +645,3 @@ class GUI(QMainWindow):
     def __del__(self):
         print("closing the gui..")
         self.close_udp.emit()
-
-
-if __name__ == "__main__":
-
-    app = QApplication(sys.argv)
-    window = GUI()
-    app.exec_()
