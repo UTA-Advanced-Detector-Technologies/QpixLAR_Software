@@ -88,7 +88,8 @@ class GUI(QMainWindow):
         # control to set SPI1
         self.s_addr = QDoubleSpinBox()
         self.s_addr.setRange(0.0, 1.0)  # Set range for the float value
-        self.s_addr.setSingleStep(0.01) 
+        self.s_addr.setSingleStep(0.001) 
+        self.s_addr.setDecimals(3)
         self.s_addr.setValue(0.5)
         self.s_addr.valueChanged.connect(self.readSPI)
         self._laddr = QLabel("VCOMP1")
@@ -98,7 +99,8 @@ class GUI(QMainWindow):
         # control to set SPI2
         self.s_addr2 = QDoubleSpinBox()
         self.s_addr2.setRange(0.0, 1.0)  # Set range for the float value
-        self.s_addr2.setSingleStep(0.01) 
+        self.s_addr2.setSingleStep(0.001) 
+        self.s_addr2.setDecimals(3)
         self.s_addr2.setValue(0.5)
         self.s_addr2.valueChanged.connect(self.readSPI2)
         self._laddr = QLabel("VCOMP2")
@@ -109,6 +111,7 @@ class GUI(QMainWindow):
         self.vcm_addr1 = QDoubleSpinBox()
         self.vcm_addr1.setRange(0.0, 1.0)  # Set range for the float value
         self.vcm_addr1.setSingleStep(0.001) 
+        self.vcm_addr1.setDecimals(3)
         self.vcm_addr1.setValue(0.5)
         self.vcm_addr1.valueChanged.connect(self.readI2C_1)
         self._laddr = QLabel("VCM1")
@@ -119,6 +122,7 @@ class GUI(QMainWindow):
         self.vcm_addr2 = QDoubleSpinBox()
         self.vcm_addr2.setRange(0.0, 1.0)  # Set range for the float value
         self.vcm_addr2.setSingleStep(0.001) 
+        self.vcm_addr2.setDecimals(3)
         self.vcm_addr2.setValue(0.5)
         self.vcm_addr2.valueChanged.connect(self.readI2C_2)
         self._laddr = QLabel("VCM2")
@@ -482,8 +486,8 @@ class GUI(QMainWindow):
         boot
         """
         print("Qpix Init")
-        self.vcm_addr1.setValue(0.780)
-        self.vcm_addr2.setValue(0.875)
+        self.s_addr.setValue(0.780)
+        self.s_addr2.setValue(0.875)
 
         addr, val = helper.get_system_reset()
         self._sendQpix(addr, val)
