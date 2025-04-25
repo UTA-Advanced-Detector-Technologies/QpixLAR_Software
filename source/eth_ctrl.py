@@ -47,7 +47,7 @@ class GUI(QMainWindow):
 
         self.tabW.addTab(self._makeCTRLayout(1), "C-Gain Ctrl")
 
-        self.tabW.addTab(self._makeCTRLLayout(), "Calibrations")
+        self.tabW.addTab(self._makeCalibrationsLayout(), "Calibrations")
 
         self._assignDefaultPadCtrl(0)
         self._assignDefaultPadCtrl(1)
@@ -183,6 +183,9 @@ class GUI(QMainWindow):
 
     def _makeCalibrationsLayout(self):
 
+        self._testPage = QWidget()
+        layout = QGridLayout()
+
         self.check_calib = QCheckBox('Calibrate')
         self.check_calib.stateChanged.connect(lambda x: self.QpixCalibration())
         layout.addWidget(self.check_calib, 0, 0)
@@ -217,7 +220,8 @@ class GUI(QMainWindow):
         self.check_integratorReset2.stateChanged.connect(lambda x: self.QpixIntegratorReset(interface_num=2))
         layout.addWidget(self.check_integratorReset2, 3, 1)
 
-        
+        self._testPage.setLayout(layout)
+        return self._testPage
 
     def _makeCTRLayout(self, num_pad=0):
         """
@@ -626,9 +630,9 @@ class GUI(QMainWindow):
         load = lambda x: helper.set_ctrl(x)
 
         if interface_num == '1':
-            val = load(REG.QCTR_pulse_rst_ext1))   
+            val = load(REG.QCTR_pulse_rst_ext1)
         if interface_num == '2':
-            val = load(REG.QCTRL_pulse_rst_ext2))
+            val = load(REG.QCTRL_pulse_rst_ext2)
         else: 
             print('Invalid reset interface!')
             return
