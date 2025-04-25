@@ -651,7 +651,6 @@ class GUI(QMainWindow):
         time.sleep(0.005)
         self._sendQpix(ctrl_addr, val)
 
-
     def QpixSerialReset(self, interface_num):
         """
         Implementation of Serial_Interface_rst.py
@@ -671,7 +670,6 @@ class GUI(QMainWindow):
         # clear respective addr
         self._sendQpix(ctrl_addr, 0)
         time.sleep(0.005)
-
 
     def ResetQpix(self):
         print("reseting the qpix system")
@@ -741,7 +739,6 @@ class GUI(QMainWindow):
         addr = REG.REG0
         val = (1<<REG.QCTRL_opad_clk_rpen1) | (1<<REG.QCTRL_opad_clk_rpen2)
         self._sendQpix(addr, val)
-
 
     ###########################
     ## GUI specific Commands ##

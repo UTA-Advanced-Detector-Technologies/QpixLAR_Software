@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "eth_ctrl debug",
+            "name": "main debug",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/source/eth_ctrl.py",
+            "program": "${workspaceFolder}/source/main.py",
             "cwd": "${workspaceFolder}/source/"
         },
         {
