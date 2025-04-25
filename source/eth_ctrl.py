@@ -182,13 +182,40 @@ class GUI(QMainWindow):
         return self._testPage
 
     def _makeCalibrationsLayout(self):
+
         self.check_calib = QCheckBox('Calibrate')
         self.check_calib.stateChanged.connect(lambda x: self.QpixCalibration())
         layout.addWidget(self.check_calib, 0, 0)
         
-        # check if i need to separate these by interface num
-        self.check_serialint = QCheckBox('Serial Interface')
-        self.check_serialint.stateChanged.connect(lambda x: self.QpixSerialInterface())
+        self.check_clock = QCheckBox('Clock ON')
+        self.check_clock.stateChanged.connect(lambda x: self.QpixClockState())
+        layout.addWidget(self.check_clock, 0, 1)
+
+        # unsure about setting data_world = helper.SerialConfig() 
+        # also check if interface1 = standard  and interface2 = c-gain
+        self.check_serialInt1 = QCheckBox('Serial Interface Standard')
+        self.check_serialInt1.stateChanged.connect(lambda x: self.QpixSerialInterface(interface_num=1, data_word=helper.SerialConfig()))
+        layout.addWidget(self.check_serialInt1, 1, 1) 
+
+        self.check_serialInt2 = QCheckBox('Serial Interface C-Gain')
+        self.check_serialInt2.stateChanged.connect(lambda x: self.QpixSerialInterface(interface_num=2, data_word=helper.SerialConfig()))
+        layout.addWidget(self.check_serialInt2, 1, 2)
+
+        self.check_serialIntReset1 = QCheckBox('Reset Serial Interface Standard')
+        self.check_serialIntReset1.stateChanged.connect(lambda x: self.QpixSerialInterface(interface_num=1))
+        layout.addWidget(self.check_serialIntReset1, 2, 0)
+
+        self.check_serialIntReset2 = QCheckBox('Reset Serial Interface C-Gain')
+        self.check_serialIntReset2.stateChanged.connect(lambda x: self.QpixSerialInterface(interface_num=2))
+        layout.addWidget(self.check_serialInt2, 2, 1)
+
+        self.check_integratorReset1 = QCheckBox('Reset Integrator Standard')
+        self.check_integratorReset1.stateChanged.connect(lambda x: self.QpixIntegratorReset(interface_num=1))
+        layout.addWidget(self.check_integratorReset1, 3, 0)
+
+        self.check_integratorReset2 = QCheckBox('Reset Integrator C-Gain')
+        self.check_integratorReset2.stateChanged.connect(lambda x: self.QpixIntegratorReset(interface_num=2))
+        layout.addWidget(self.check_integratorReset2, 3, 1)
 
         
 
