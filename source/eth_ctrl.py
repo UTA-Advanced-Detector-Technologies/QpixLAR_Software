@@ -47,6 +47,8 @@ class GUI(QMainWindow):
 
         self.tabW.addTab(self._makeCTRLayout(1), "C-Gain Ctrl")
 
+        self.tabW.addTab(self._makeCTRLLayout(), "Calibrations")
+
         self._assignDefaultPadCtrl(0)
         self._assignDefaultPadCtrl(1)
 
@@ -55,6 +57,8 @@ class GUI(QMainWindow):
         self.show()
 
         self.InitQpix()
+        self.updateShutdownMask()
+        self.updateTriggerMask()
 
     def _makeEthlayout(self):
         """
@@ -176,6 +180,17 @@ class GUI(QMainWindow):
 
         self._testPage.setLayout(layout)
         return self._testPage
+
+    def _makeCalibrationsLayout(self):
+        self.check_calib = QCheckBox('Calibrate')
+        self.check_calib.stateChanged.connect(lambda x: self.QpixCalibration())
+        layout.addWidget(self.check_calib, 0, 0)
+        
+        # check if i need to separate these by interface num
+        self.check_serialint = QCheckBox('Serial Interface')
+        self.check_serialint.stateChanged.connect(lambda x: self.QpixSerialInterface())
+
+        
 
     def _makeCTRLayout(self, num_pad=0):
         """
@@ -545,6 +560,74 @@ class GUI(QMainWindow):
         self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_load_data))
         time.sleep(0.005)
         self._sendQpix(ctrl_addr, 0)
+
+    def QpixCalibration(self):
+        """
+        Implementation of Calibrate.py
+        """
+        ctrl_addr = REG.REG0  # control register 
+        load = lambda x: helper.set_ctrl(x)
+
+        self._sendQpix(ctrl_addr, load(REG.QCTRL_calibrate))
+        time.sleep(0.005)
+        self._sendQpix(ctrl_addr, 0)
+
+
+    def QpixClockState(self, isOn=True):
+        """
+        Implementation of Clock_50MHz.py
+        ARGS:
+            isOn : if isOn is true, will turn on the pad's clocks, otherwise they off
+        """
+        ctrl_addr = REG.REG0
+        load = lambda x: helper.set_ctrl(x)
+    
+        if isOn:
+            val = load(REG.QCTRL_opad_clk_rpen1) | load(REG.QCTRL_opad_clk_rpen2)
+        else:
+            val = 0
+        time.sleep(0.005)
+        self._sendQpix(ctrl_addr, val)
+
+
+    def QpixIntegratorReset(self, interface_num):
+        """
+        Implementation of Integrator_rst.py
+        """
+        ctrl_addr = REG.REG0
+        
+        load = lambda x: helper.set_ctrl(x)
+
+        if interface_num == '1':
+            val = load(REG.QCTR_pulse_rst_ext1))   
+        if interface_num == '2':
+            val = load(REG.QCTRL_pulse_rst_ext2))
+        else: 
+            print('Invalid reset interface!')
+            return
+
+        time.sleep(0.005)
+        self._sendQpix(ctrl_addr, val)
+
+
+    def QpixSerialReset(self, interface_num):
+        """
+        Implementation of Serial_Interface_rst.py
+        """
+        ctrl_addr, data_addr = helper.get_serial_addrs(interface_num)
+
+        load = lambda x: helper.set_ctrl(x)
+
+        self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_load_data))
+        time.sleep(0.005)
+        
+        # send 100us pulse on opad_loadData
+        self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_opad_selDefData))  
+        time.sleep(0.005)
+
+        self._sendQpix(ctrl_addr, 0)
+        time.sleep(0.005)
+
 
     def ResetQpix(self):
         print("reseting the qpix system")
