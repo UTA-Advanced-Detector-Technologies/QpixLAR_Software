@@ -165,6 +165,10 @@ class GUI(QMainWindow):
                 self._shutdownMask.append(a)
                 layout.addWidget(a, 1+i, j)
 
+        self._toggleShutdownMasks = QCheckBox(f"enable all")
+        self._toggleShutdownMasks.stateChanged.connect(self.toggleShutdownMasks)
+        layout.addWidget(self._toggleShutdownMasks, 0, 1)
+        
         # 4x4 channel grid of check boxes which control whether or not a trigger
         # will occur if a reset is detected at this pixel
         l =  QLabel("Trigger Enable")
@@ -177,6 +181,10 @@ class GUI(QMainWindow):
                 a.stateChanged.connect(self.updateTriggerMask)
                 self._triggerMask.append(a)
                 layout.addWidget(a, 6+i, j)
+
+        self._toggleTriggerMasks = QCheckBox(f"enable all")
+        self._toggleTriggerMasks.stateChanged.connect(self.toggleTriggerMask)
+        layout.addWidget(self._toggleTriggerMasks, 5, 1)
 
         self._testPage.setLayout(layout)
         return self._testPage
@@ -194,30 +202,20 @@ class GUI(QMainWindow):
         self.check_clock.stateChanged.connect(lambda x: self.QpixClockState())
         layout.addWidget(self.check_clock, 0, 1)
 
-        # unsure about setting data_world = helper.SerialConfig() 
-        # also check if interface1 = standard  and interface2 = c-gain
-        self.check_serialInt1 = QCheckBox('Serial Interface Standard')
-        self.check_serialInt1.stateChanged.connect(lambda x: self.QpixSerialInterface(interface_num=1, data_word=helper.SerialConfig()))
-        layout.addWidget(self.check_serialInt1, 1, 1) 
-
-        self.check_serialInt2 = QCheckBox('Serial Interface C-Gain')
-        self.check_serialInt2.stateChanged.connect(lambda x: self.QpixSerialInterface(interface_num=2, data_word=helper.SerialConfig()))
-        layout.addWidget(self.check_serialInt2, 1, 2)
-
-        self.check_serialIntReset1 = QCheckBox('Reset Serial Interface Standard')
-        self.check_serialIntReset1.stateChanged.connect(lambda x: self.QpixSerialInterface(interface_num=1))
+        self.check_serialIntReset1 = QPushButton('Reset Serial Interface Standard')
+        self.check_serialIntReset1.clicked.connect(lambda x: self.QpixSerialReset(interface_num=1))
         layout.addWidget(self.check_serialIntReset1, 2, 0)
 
-        self.check_serialIntReset2 = QCheckBox('Reset Serial Interface C-Gain')
-        self.check_serialIntReset2.stateChanged.connect(lambda x: self.QpixSerialInterface(interface_num=2))
-        layout.addWidget(self.check_serialInt2, 2, 1)
+        self.check_serialIntReset2 = QPushButton('Reset Serial Interface C-Gain')
+        self.check_serialIntReset2.clicked.connect(lambda x: self.QpixSerialReset(interface_num=2))
+        layout.addWidget(self.check_serialIntReset2, 2, 1)
 
-        self.check_integratorReset1 = QCheckBox('Reset Integrator Standard')
-        self.check_integratorReset1.stateChanged.connect(lambda x: self.QpixIntegratorReset(interface_num=1))
+        self.check_integratorReset1 = QPushButton('Reset Integrator Standard')
+        self.check_integratorReset1.clicked.connect(lambda x: self.QpixIntegratorReset(interface_num=1))
         layout.addWidget(self.check_integratorReset1, 3, 0)
 
-        self.check_integratorReset2 = QCheckBox('Reset Integrator C-Gain')
-        self.check_integratorReset2.stateChanged.connect(lambda x: self.QpixIntegratorReset(interface_num=2))
+        self.check_integratorReset2 = QPushButton('Reset Integrator C-Gain')
+        self.check_integratorReset2.clicked.connect(lambda x: self.QpixIntegratorReset(interface_num=2))
         layout.addWidget(self.check_integratorReset2, 3, 1)
 
         self._testPage.setLayout(layout)
@@ -376,6 +374,22 @@ class GUI(QMainWindow):
         # example sanity checking here
         # print(f"sum is: {mask:04x}")
         self.readCTRL(reg_addr=REG.CTRL_SHDN, val=mask)
+
+    def toggleShutdownMasks(self):
+        """
+        helper function from a checkbox that will enable or disable all of the
+        ltc pins and either enable or disable it
+        """
+        isChecked = self._toggleShutdownMasks.isChecked()
+        _ = [a.setChecked(isChecked) for a in self._shutdownMask ]
+
+    def toggleTriggerMask(self):
+        """
+        helper function from a checkbox that will enable or disable all of the
+        ASIC channels connected to this the zturn
+        """
+        isChecked = self._toggleTriggerMasks.isChecked()
+        _ = [a.setChecked(isChecked) for a in self._triggerMask ]
 
     def updateTriggerMask(self):
         """
@@ -603,7 +617,6 @@ class GUI(QMainWindow):
         time.sleep(0.005)
         self._sendQpix(ctrl_addr, 0)
 
-
     def QpixClockState(self, isOn=True):
         """
         Implementation of Clock_50MHz.py
@@ -620,18 +633,16 @@ class GUI(QMainWindow):
         time.sleep(0.005)
         self._sendQpix(ctrl_addr, val)
 
-
     def QpixIntegratorReset(self, interface_num):
         """
         Implementation of Integrator_rst.py
         """
         ctrl_addr = REG.REG0
-        
         load = lambda x: helper.set_ctrl(x)
 
-        if interface_num == '1':
-            val = load(REG.QCTR_pulse_rst_ext1)
-        if interface_num == '2':
+        if interface_num == 1:
+            val = load(REG.QCTRL_pulse_rst_ext1)
+        elif interface_num == 2:
             val = load(REG.QCTRL_pulse_rst_ext2)
         else: 
             print('Invalid reset interface!')
@@ -646,16 +657,18 @@ class GUI(QMainWindow):
         Implementation of Serial_Interface_rst.py
         """
         ctrl_addr, data_addr = helper.get_serial_addrs(interface_num)
-
         load = lambda x: helper.set_ctrl(x)
 
-        self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_load_data))
+        val = load(REG.QPAD_CTRL_load_data)
+        self._sendQpix(ctrl_addr, val)
         time.sleep(0.005)
         
         # send 100us pulse on opad_loadData
-        self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_opad_selDefData))  
+        val |= load(REG.QPAD_CTRL_opad_selDefData)
+        self._sendQpix(ctrl_addr, val)  
         time.sleep(0.005)
 
+        # clear respective addr
         self._sendQpix(ctrl_addr, 0)
         time.sleep(0.005)
 
