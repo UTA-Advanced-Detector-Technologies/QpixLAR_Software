@@ -56,9 +56,10 @@ class GUI(QMainWindow):
         self.setCentralWidget(self.tabW)
         self.show()
 
-        self.InitQpix()
+        self._toggleForceEnable.setChecked(1)
         self.updateShutdownMask()
         self.updateTriggerMask()
+        self.InitQpix()
 
     def _makeEthlayout(self):
         """
@@ -185,6 +186,10 @@ class GUI(QMainWindow):
         self._toggleTriggerMasks = QCheckBox(f"enable all")
         self._toggleTriggerMasks.stateChanged.connect(self.toggleTriggerMask)
         layout.addWidget(self._toggleTriggerMasks, 5, 1)
+
+        self._toggleForceEnable = QCheckBox(f"force enable")
+        self._toggleForceEnable.stateChanged.connect(self.toggleForceEnable)
+        layout.addWidget(self._toggleForceEnable, 5, 2)
 
         self._testPage.setLayout(layout)
         return self._testPage
@@ -390,6 +395,15 @@ class GUI(QMainWindow):
         """
         isChecked = self._toggleTriggerMasks.isChecked()
         _ = [a.setChecked(isChecked) for a in self._triggerMask ]
+
+    def toggleForceEnable(self):
+        """
+        helper function which will set the force enable bit to the firmware register.
+        this will allow all sampling and resets to come through, regardless of the sampling
+        window set by the opaque 'sample select' bit
+        """
+        isChecked = self._toggleForceEnable.isChecked()
+        self.readCTRL(reg_addr=REG.CTRL_FORCE_VALID, val=int(isChecked))
 
     def updateTriggerMask(self):
         """
@@ -770,6 +784,6 @@ class GUI(QMainWindow):
         """
         pass
 
-    def __del__(self):
-        print("closing the gui..")
+    def closeEvent(self, event):
+        print("close the gui..")
         self.close_udp.emit()

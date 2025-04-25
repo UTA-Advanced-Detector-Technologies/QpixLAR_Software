@@ -87,7 +87,7 @@ def readEvtFromBytes(qbytearray):
         timestamp = struct.unpack('<Q', b[0:8])[0]
     metadata  = 42
 
-    print("byte array: ", b)
+    # print("byte array: ", b)
     print(f"mask={mask:04x}, timestamp={timestamp*5e-9:.2e}, metadata={metadata}")
     return mask, timestamp, metadata
 

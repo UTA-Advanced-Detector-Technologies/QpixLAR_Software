@@ -149,7 +149,7 @@ class eth_interface(QObject):
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.udp_done)
-        # self.thread.start()
+        self.thread.start()
 
         # create the tcp socket
         self._tcpsocket = QTcpSocket(self)
@@ -309,7 +309,7 @@ class eth_interface(QObject):
         slot function to emit finished signal
         """
         self.finished.emit()
-        QUdpSocket().writeDatagram(EXIT_PACKET, QHostAddress(ETH_UDP_IP), ETH_UDP_PORT)
+        QUdpSocket().writeDatagram(EXIT_PACKET, QHostAddress(LOCAL_UDP_IP), ETH_UDP_PORT)
 
 
 if __name__ == '__main__':

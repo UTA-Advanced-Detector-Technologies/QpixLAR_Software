@@ -84,6 +84,8 @@ QPAD_CTRL_opad_selDefData   = 9
 ## CTRL Register Addrs ##
 #########################
 # special control values to select ctrl registers
-CTRL_SHDN = 0x4C520000
-CTRL_MASK = 0x4C520001
-CTRL_PLEN = 0x4C520010
+CTRL_SHDN        = 0x4C520000
+CTRL_MASK        = 0x4C520001
+CTRL_PLEN        = 0x4C520010
+CTRL_FPGA_ID     = 0x4C520011
+CTRL_FORCE_VALID = 0x4C520100
