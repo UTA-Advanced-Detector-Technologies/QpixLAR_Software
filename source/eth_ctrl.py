@@ -63,8 +63,8 @@ class GUI(QMainWindow):
         self.InitQpix()
 
         # define initial vcm's for i2c when connected
-        # self.vcm_addr1.setValue(0.95)
-        # self.vcm_addr2.setValue(0.95)
+        self.vcm_addr1.setValue(0.95)
+        self.vcm_addr2.setValue(0.95)
 
     def _makeEthlayout(self):
         """
