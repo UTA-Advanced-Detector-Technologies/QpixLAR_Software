@@ -136,7 +136,7 @@ def get_integrator_pads(pads=[1,2]):
     and appropriate bits to set to reset the pads lists in pads
     pads is a list containing elements of 1 and/or 2.
     """
-    assert len(pads) >= 2 and len(pads) > 0, "pads must have a length of one or two" 
+    assert len(pads) <= 2 and len(pads) > 0, "pads must have a length of one or two" 
     assert all(element in [1,2] for element in pads), "pads can only contain Pad1 (standard), Pad2 (C-gain)"
     data = 0
     if 1 in pads:

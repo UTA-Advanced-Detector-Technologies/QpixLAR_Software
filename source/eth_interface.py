@@ -260,7 +260,7 @@ class eth_interface(QObject):
             data = self._tcpsocket.read(4)
             val = struct.unpack('<I', data)[0]
             self.data = val
-            print(f"{self.data:08x}")
+            # print(f"{self.data:08x}")
 
         return self.data
 

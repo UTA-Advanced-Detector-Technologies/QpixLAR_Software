@@ -54,10 +54,17 @@ class GUI(QMainWindow):
         self.setCentralWidget(self.tabW)
         self.show()
 
+        # default calibration time in seconds
+        self.cal_time = 1.0
+
         self._toggleForceEnable.setChecked(1)
         self.updateShutdownMask()
         self.updateTriggerMask()
         self.InitQpix()
+
+        # define initial vcm's for i2c when connected
+        # self.vcm_addr1.setValue(0.95)
+        # self.vcm_addr2.setValue(0.95)
 
     def _makeEthlayout(self):
         """
@@ -83,10 +90,10 @@ class GUI(QMainWindow):
         btn_read_qpix.clicked.connect(lambda x: self.ResetQpix())
         layout.addWidget(btn_read_qpix, 0, 2)
 
-        btn_read_ctrl = QPushButton()
-        btn_read_ctrl.setText('CTRL')
-        btn_read_ctrl.clicked.connect(lambda x: self.readReg('CTRL'))
-        layout.addWidget(btn_read_ctrl, 0, 3)
+        # btn_read_ctrl = QPushButton()
+        # btn_read_ctrl.setText('CTRL')
+        # btn_read_ctrl.clicked.connect(lambda x: self.readReg('CTRL'))
+        # layout.addWidget(btn_read_ctrl, 0, 3)
 
         # control to set SPI1
         self.s_addr = QDoubleSpinBox()
@@ -197,8 +204,8 @@ class GUI(QMainWindow):
         self._testPage = QWidget()
         layout = QGridLayout()
 
-        self.check_calib = QCheckBox('Calibrate')
-        self.check_calib.stateChanged.connect(lambda x: self.QpixCalibration())
+        self.check_calib = QPushButton('Calibrate')
+        self.check_calib.clicked.connect(lambda x: self.QpixCalibration())
         layout.addWidget(self.check_calib, 0, 0)
         
         self.check_clock = QCheckBox('Clock ON')
@@ -214,11 +221,11 @@ class GUI(QMainWindow):
         layout.addWidget(self.check_serialIntReset2, 2, 1)
 
         self.check_integratorReset1 = QPushButton('Reset Integrator Standard')
-        self.check_integratorReset1.clicked.connect(lambda x: self.QpixIntegratorReset(interface_num=1))
+        self.check_integratorReset1.clicked.connect(lambda x: self.QpixIntegratorReset(pads=[1]))
         layout.addWidget(self.check_integratorReset1, 3, 0)
 
         self.check_integratorReset2 = QPushButton('Reset Integrator C-Gain')
-        self.check_integratorReset2.clicked.connect(lambda x: self.QpixIntegratorReset(interface_num=2))
+        self.check_integratorReset2.clicked.connect(lambda x: self.QpixIntegratorReset(pads=[2]))
         layout.addWidget(self.check_integratorReset2, 3, 1)
 
         self._testPage.setLayout(layout)
@@ -561,6 +568,10 @@ class GUI(QMainWindow):
         self.s_addr.setValue(0.780)
         self.s_addr2.setValue(0.875)
 
+        # on boot re-load the default configuration registers
+        self.updatePadCtrlReg(0)
+        self.updatePadCtrlReg(1)
+
         addr, val = helper.get_system_reset()
         self._sendQpix(addr, val)
 
@@ -588,7 +599,7 @@ class GUI(QMainWindow):
         self._sendQpix(addr, val)
 
         # reset integrators on boot
-        self.qpix_integrator_rst()
+        self.QpixIntegratorReset()
 
         # control register inits
         self.updateShutdownMask()
@@ -626,9 +637,12 @@ class GUI(QMainWindow):
         ctrl_addr = REG.REG0  # control register 
         load = lambda x: helper.set_ctrl(x)
 
+        print(f"waiting for time={self.cal_time}", end=".. ")
         self._sendQpix(ctrl_addr, load(REG.QCTRL_calibrate))
-        time.sleep(QPIX_SER_TIME)
+
+        time.sleep(self.cal_time)
         self._sendQpix(ctrl_addr, 0)
+        print("calibration complete!")
 
     def QpixClockState(self, isOn=True):
         """
@@ -643,24 +657,6 @@ class GUI(QMainWindow):
             val = load(REG.QCTRL_opad_clk_rpen1) | load(REG.QCTRL_opad_clk_rpen2)
         else:
             val = 0
-        time.sleep(QPIX_SER_TIME)
-        self._sendQpix(ctrl_addr, val)
-
-    def QpixIntegratorReset(self, interface_num):
-        """
-        Implementation of Integrator_rst.py
-        """
-        ctrl_addr = REG.REG0
-        load = lambda x: helper.set_ctrl(x)
-
-        if interface_num == 1:
-            val = load(REG.QCTRL_pulse_rst_ext1)
-        elif interface_num == 2:
-            val = load(REG.QCTRL_pulse_rst_ext2)
-        else: 
-            print('Invalid reset interface!')
-            return
-
         time.sleep(QPIX_SER_TIME)
         self._sendQpix(ctrl_addr, val)
 
@@ -743,15 +739,17 @@ class GUI(QMainWindow):
         addr, val = helper.set_system_clear()
         self._sendQpix(addr, val)
 
-    def qpix_integrator_rst(self, pads=[1,2]):
+    def QpixIntegratorReset(self, pads=[1,2]):
         """
         implements the equivalent off Integrator_Rst_Fix.py 
         """
         addr, val = helper.get_integrator_pads(pads)
         self._sendQpix(addr, val)
         time.sleep(0.1)
+
         addr = REG.REG0
-        val = (1<<REG.QCTRL_opad_clk_rpen1) | (1<<REG.QCTRL_opad_clk_rpen2)
+        load = lambda x: helper.set_ctrl(x)
+        val = load(REG.QCTRL_opad_clk_rpen1) | load(REG.QCTRL_opad_clk_rpen2)
         self._sendQpix(addr, val)
 
     ###########################
