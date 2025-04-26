@@ -4,6 +4,8 @@ import sys
 
 if __name__ == "__main__":
 
+    print("running the main program")
     app = QApplication(sys.argv)
+    print("application started.. intializing the GUI")
     window = GUI()
-    app.exec_()
+    sys.exit(app.exec_())

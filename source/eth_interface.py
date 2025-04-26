@@ -17,6 +17,7 @@ BUFFER_SIZE = 1024
 
 # UDP Info
 LOCAL_UDP_IP   = '192.168.1.1' # this should be the ip address on the ethernet socket
+LOCAL_UDP_PORT = 49620
 ETH_UDP_IP   = '192.168.1.10'
 ETH_UDP_PORT = 8
 EXIT_PACKET = bytes("ZaiJian", encoding="utf-8")
@@ -53,7 +54,11 @@ class UDPworker(QObject):
 
         self._datafile = datafile()
 
-        self._first = 0
+        self._isCollecting = False
+        if self._udp_connect():
+            # self.output_file = datetime.datetime.now().strftime('./data/%m_%d_%Y_%H_%M_%S.h5')
+            self.output_file = datetime.datetime.now().strftime('./data/tmp.h5')
+            self._datafile.open(self.output_file)
 
     def _send(self, msg):
         """
@@ -77,46 +82,42 @@ class UDPworker(QObject):
         try to connect to the UDP socket, and get a response from the zturn 
         """
         print("udp connecting..", end="")
-        connected = False
+        self.connected = False
         try:
-            bound = self._udpsocket.bind(QHostAddress(LOCAL_UDP_IP), ETH_UDP_PORT)
+            bound = self._udpsocket.bind(QHostAddress(LOCAL_UDP_IP), LOCAL_UDP_PORT)
             print("Thread UDP..", end=" ")
             if bound:
                 print("connected!", end= " ")
-                connected = self._send("ni hao")
+                self.connected = self._send("ni hao") # tells Z-turn FPGA where to send data to
             else:
                 print("ERROR!! UDP unconnected!..")
 
         except Exception as ex:
             print(ex)
 
-        return connected
+
+        return self.connected
 
     def on_readyRead(self):
-        while self._udpsocket.hasPendingDatagrams():
+        while self._isCollecting and self._udpsocket.hasPendingDatagrams():
             datagram = QByteArray()
             datagram.resize(self._udpsocket.pendingDatagramSize())
             datagram, host, port = self._udpsocket.readDatagram(self._udpsocket.pendingDatagramSize())
             if datagram == EXIT_PACKET:
                 self.finished.emit()
                 self._udpsocket.close()
-                return
+                self._isCollecting = False
             else:
                 self.new_data.emit(datagram)
                 mask, timestamp, meta = readEvtFromBytes(datagram)
                 self._datafile.log_event(mask=mask, timestamp=timestamp, meta=meta)
 
     def run(self):
-        if self._first == 0:
-            self._udpsocket.readyRead.connect(self.on_readyRead)
-            self._first += 1
-        if not self._udp_connect():
+        if not self.connected:
             self.finished.emit()
         else:
-            # self.output_file = datetime.datetime.now().strftime('./data/%m_%d_%Y_%H_%M_%S.h5')
-            self.output_file = datetime.datetime.now().strftime('./data/tmp.h5')
-            self._datafile.open(self.output_file)
-
+            self._udpsocket.readyRead.connect(self.on_readyRead)
+            self._isCollecting = True
 
 class eth_interface(QObject):
     """
@@ -149,7 +150,7 @@ class eth_interface(QObject):
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.udp_done)
-        self.thread.start()
+        self.start()
 
         # create the tcp socket
         self._tcpsocket = QTcpSocket(self)
@@ -295,7 +296,6 @@ class eth_interface(QObject):
         """
         signaled from the UDP worker which manages the QUdpSocket
         """
-        print("UDP thread worker is finished!")
         self.thread.quit()
 
     def start(self):
@@ -309,7 +309,8 @@ class eth_interface(QObject):
         slot function to emit finished signal
         """
         self.finished.emit()
-        QUdpSocket().writeDatagram(EXIT_PACKET, QHostAddress(LOCAL_UDP_IP), ETH_UDP_PORT)
+        QUdpSocket().writeDatagram(EXIT_PACKET, QHostAddress(LOCAL_UDP_IP), LOCAL_UDP_PORT)
+        self._tcpsocket.close()
 
 
 if __name__ == '__main__':
