@@ -16,6 +16,8 @@ from helpers import calcMaskFromCheckboxes
 import helpers as helper
 from helpers import WidgetNames as WN
 
+QPIX_SER_TIME = 0.025 # 25 ms
+
 class GUI(QMainWindow):
 
     close_udp = pyqtSignal()
@@ -40,13 +42,9 @@ class GUI(QMainWindow):
         # create the layouts that are needed for making the GUI pretty
         self.tabW = QTabWidget()
         self.tabW.addTab(self._makeEthlayout(), "ETH")
-
         self.tabW.addTab(self._makeMaskLayout(), "Mask Ctrl")
-
         self.tabW.addTab(self._makeCTRLayout(), "Standard Ctrl")
-
         self.tabW.addTab(self._makeCTRLayout(1), "C-Gain Ctrl")
-
         self.tabW.addTab(self._makeCalibrationsLayout(), "Calibrations")
 
         self._assignDefaultPadCtrl(0)
@@ -566,7 +564,7 @@ class GUI(QMainWindow):
         addr, val = helper.get_system_reset()
         self._sendQpix(addr, val)
 
-        # REG7 Config
+        # REG7 Config - Sample Window Width
         addr, val = helper.set_system_window_width()
         self._sendQpix(addr, val)
 
@@ -589,6 +587,7 @@ class GUI(QMainWindow):
         addr, val = helper.set_system_clear()
         self._sendQpix(addr, val)
 
+        # reset integrators on boot
         self.qpix_integrator_rst()
 
         # control register inits
@@ -607,17 +606,17 @@ class GUI(QMainWindow):
         load = lambda x: helper.set_ctrl(x)
 
         # shift register load, piso requirement
-        time.sleep(0.005)
+        time.sleep(QPIX_SER_TIME)
         self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_load))
-        time.sleep(0.005)
+        time.sleep(QPIX_SER_TIME)
         self._sendQpix(ctrl_addr, 0)
-        time.sleep(0.005)
+        time.sleep(QPIX_SER_TIME)
 
         self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_xmit))
-        time.sleep(0.005)
+        time.sleep(QPIX_SER_TIME)
 
         self._sendQpix(ctrl_addr, load(REG.QPAD_CTRL_load_data))
-        time.sleep(0.005)
+        time.sleep(QPIX_SER_TIME)
         self._sendQpix(ctrl_addr, 0)
 
     def QpixCalibration(self):
@@ -628,7 +627,7 @@ class GUI(QMainWindow):
         load = lambda x: helper.set_ctrl(x)
 
         self._sendQpix(ctrl_addr, load(REG.QCTRL_calibrate))
-        time.sleep(0.005)
+        time.sleep(QPIX_SER_TIME)
         self._sendQpix(ctrl_addr, 0)
 
     def QpixClockState(self, isOn=True):
@@ -644,7 +643,7 @@ class GUI(QMainWindow):
             val = load(REG.QCTRL_opad_clk_rpen1) | load(REG.QCTRL_opad_clk_rpen2)
         else:
             val = 0
-        time.sleep(0.005)
+        time.sleep(QPIX_SER_TIME)
         self._sendQpix(ctrl_addr, val)
 
     def QpixIntegratorReset(self, interface_num):
@@ -662,7 +661,7 @@ class GUI(QMainWindow):
             print('Invalid reset interface!')
             return
 
-        time.sleep(0.005)
+        time.sleep(QPIX_SER_TIME)
         self._sendQpix(ctrl_addr, val)
 
     def QpixSerialReset(self, interface_num):
@@ -672,18 +671,19 @@ class GUI(QMainWindow):
         ctrl_addr, data_addr = helper.get_serial_addrs(interface_num)
         load = lambda x: helper.set_ctrl(x)
 
-        val = load(REG.QPAD_CTRL_load_data)
+        # TODO confirm that this should set bit 9 first, then bit 8
+        val = load(REG.QPAD_CTRL_opad_selDefData)
         self._sendQpix(ctrl_addr, val)
-        time.sleep(0.005)
+        time.sleep(QPIX_SER_TIME)
         
         # send 100us pulse on opad_loadData
-        val |= load(REG.QPAD_CTRL_opad_selDefData)
+        val |= load(REG.QPAD_CTRL_load_data)
         self._sendQpix(ctrl_addr, val)  
-        time.sleep(0.005)
+        time.sleep(QPIX_SER_TIME)
 
-        # clear respective addr
+        # clear respective ctrl_addr
         self._sendQpix(ctrl_addr, 0)
-        time.sleep(0.005)
+        time.sleep(QPIX_SER_TIME)
 
     def ResetQpix(self):
         print("reseting the qpix system")

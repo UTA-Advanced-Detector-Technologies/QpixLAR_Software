@@ -107,19 +107,27 @@ def set_system_calibration():
 def set_system_clear():
     return REG.REG0, 0
 
-def set_system_window_width(n_clks=1000):
+def set_system_window_width(n_clks=10000):
     """
     sets number of 50 MHz clock ticks to sample data for
+    n_clks = 10000 ~ 200 us wait time by default
+    This configures the sample window valid in the firmware.
+    This can be overridden with the force select bit.
     """
     return REG.REG7, int(n_clks)
 
-def set_system_reset_width(t_us=5, cal_gap_cnts=5):
+def set_system_reset_width(t_us=50, ncnts=5):
     """
     reset register is an double duty register, which stores the
     reset width and the rst cal gap
+    NOTE: cal_gap exclusively used as 5 by Penn Software
+    ARGS:
+        t_us  : time in microseconds for the reset pulse width, suggested
+                default 50us
+        ncnts : number of clock counts for the calibration gap
     """
     rst_width = int((t_us*1e-6) * ZTURN_FCLK1)
-    cal_gap = (cal_gap_cnts & 0xffff) << 16
+    cal_gap = (ncnts & 0xffff) << 16
     return REG.REG8, cal_gap | rst_width
 
 def get_integrator_pads(pads=[1,2]):
@@ -221,7 +229,8 @@ def set_deltaT_delay(t_us=10, enable=False):
         enable : if enabled then bit 32 is enabled on this register
                  this bit is tired to sample_select in the firmware
     """
-    delay_time = int((t_us*1e-6) * ZTURN_FCLK1)
+    sz = int(t_us / 10) + 1
+    delay_time = int(round((t_us*1e-6) * ZTURN_FCLK1, sz))
     reg_val = delay_time | (1<<31) if enable else delay_time
     return REG.REG9, reg_val
     
