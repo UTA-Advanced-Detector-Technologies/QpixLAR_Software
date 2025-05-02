@@ -567,6 +567,8 @@ class GUI(QMainWindow):
         print("Qpix Init")
         self.s_addr.setValue(0.780)
         self.s_addr2.setValue(0.875)
+        # TODO what causes bad HFA voltages in the next lines?
+        return
 
         # on boot re-load the default configuration registers
         self.updatePadCtrlReg(0)
