@@ -46,19 +46,19 @@ class SerialConfig():
     for each of the pads in the qpix ASIC.
     These default values are taken from the qpixserialinterface.xlsx
     """
-    def __init__(self, calibration=False):
+    def __init__(self, calibration=True):
         # bit reversal for replen_cur handled in algorithm
         self.replen_cur    = 0b10101 if not calibration else 0b10101
-        self.curReplen     = reverse_bits(0b010, 3) if not calibration else reverse_bits(0b011, 3)
+        self.curReplen     = reverse_bits(0b010, 3) if not calibration else reverse_bits(0b010, 3)
         self.curCmp        = reverse_bits(0b011, 3) if not calibration else reverse_bits(0b011, 3)
         self.curAmp        = reverse_bits(0b011, 3) if not calibration else reverse_bits(0b011, 3)
         self.curInt        = reverse_bits(0b011, 3) if not calibration else reverse_bits(0b011, 3)
-        self.enable        = reverse_bits(0x03,  8) if not calibration else reverse_bits(0b011, 3)
+        self.enable        = reverse_bits(0x03,  8) if not calibration else reverse_bits(0xff,  8)
         self.clk_source_ro = True if not calibration else True
-        self.dbl_bar       = False if not calibration else True
+        self.dbl_bar       = False if not calibration else False
         self.enableRingOsc = True if not calibration else True
         self.ringOsc_f     = reverse_bits(0b10,  8) if not calibration else reverse_bits(0b00,  8)
-        self.LVDS_drvr     = True if not calibration else True
+        self.LVDS_drvr     = True if not calibration else False
         self.enableCalB    = True if not calibration else False
 
 def calcMaskFromCheckboxes(checkBoxList):

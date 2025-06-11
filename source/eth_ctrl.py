@@ -16,7 +16,7 @@ from helpers import calcMaskFromCheckboxes
 import helpers as helper
 from helpers import WidgetNames as WN
 
-QPIX_SER_TIME = 0.025 # 25 ms
+QPIX_SER_TIME = 0.050 # 50 ms
 
 class GUI(QMainWindow):
 
@@ -326,6 +326,7 @@ class GUI(QMainWindow):
 
         # update and send
         data = helper.make_serial_word(ser_word)
+        # print(f"{data:08x}")
         self.pads_ctrl[num_pad] = ser_word
         self.QpixSerial(num_pad+1, data)
     
