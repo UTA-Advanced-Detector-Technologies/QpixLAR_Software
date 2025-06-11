@@ -65,6 +65,10 @@ class GUI(QMainWindow):
         self.vcm_addr1.setValue(0.973)
         self.vcm_addr2.setValue(0.95)
 
+        # vcomps set here
+        self.s_addr.setValue(0.720)
+        self.s_addr2.setValue(0.875)
+
         self.InitQpix()
 
 
@@ -567,11 +571,9 @@ class GUI(QMainWindow):
         Wrapper function to set qpix registers to a known starting state on GUI
         boot
         """
-        print("Qpix Init")
-        self.s_addr.setValue(0.720)
-        self.s_addr2.setValue(0.875)
-        # TODO Kalindi verify that these voltages are still set correctly even after the next
-        # register values are set
+        print("Qpix Init?")
+        # TODO Kalindi verify that updating serial interface turns on spy point here
+        self.QpixSerial(1, 0x55B680CE)
         return
 
         addr, val = helper.get_system_reset()
