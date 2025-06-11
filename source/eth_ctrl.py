@@ -62,7 +62,7 @@ class GUI(QMainWindow):
         self.updateTriggerMask()
 
         # define initial vcm's for i2c when connected
-        self.vcm_addr1.setValue(0.95)
+        self.vcm_addr1.setValue(0.973)
         self.vcm_addr2.setValue(0.95)
 
         self.InitQpix()
@@ -568,7 +568,7 @@ class GUI(QMainWindow):
         boot
         """
         print("Qpix Init")
-        self.s_addr.setValue(0.780)
+        self.s_addr.setValue(0.720)
         self.s_addr2.setValue(0.875)
         # TODO Kalindi verify that these voltages are still set correctly even after the next
         # register values are set
