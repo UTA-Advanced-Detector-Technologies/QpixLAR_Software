@@ -27,8 +27,8 @@ class GUI(QMainWindow):
 
         # IO interfaces
         self.eth = eth_interface()
-        if not self.eth.isConnected():
-            sys.exit(-1)
+        # if not self.eth.isConnected():
+        #     sys.exit(-1)
 
         self.close_udp.connect(self.eth.finish) # closes udp worker thread
         self.version = self.eth.version
@@ -60,11 +60,13 @@ class GUI(QMainWindow):
         self._toggleForceEnable.setChecked(1)
         self.updateShutdownMask()
         self.updateTriggerMask()
-        self.InitQpix()
 
         # define initial vcm's for i2c when connected
         self.vcm_addr1.setValue(0.95)
         self.vcm_addr2.setValue(0.95)
+
+        self.InitQpix()
+
 
     def _makeEthlayout(self):
         """
