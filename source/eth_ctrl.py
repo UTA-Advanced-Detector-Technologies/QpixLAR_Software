@@ -572,9 +572,6 @@ class GUI(QMainWindow):
         boot
         """
         print("Qpix Init?")
-        # TODO Kalindi verify that updating serial interface turns on spy point here
-        self.QpixSerial(1, 0x55B680CE)
-        return
 
         addr, val = helper.get_system_reset()
         self._sendQpix(addr, val)
@@ -601,6 +598,10 @@ class GUI(QMainWindow):
 
         addr, val = helper.set_system_clear()
         self._sendQpix(addr, val)
+
+        # TODO Kalindi verify that updating serial interface turns on spy point here
+        self.QpixSerial(1, 0x55B680CE)
+        return
 
         # TODO verify when the serial configuration registers should be tuned
         return
