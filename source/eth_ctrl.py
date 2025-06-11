@@ -326,7 +326,7 @@ class GUI(QMainWindow):
 
         # update and send
         data = helper.make_serial_word(ser_word)
-        # print(f"{data:08x}")
+        print(f"{data:08x}")
         self.pads_ctrl[num_pad] = ser_word
         self.QpixSerial(num_pad+1, data)
     
@@ -568,12 +568,9 @@ class GUI(QMainWindow):
         print("Qpix Init")
         self.s_addr.setValue(0.780)
         self.s_addr2.setValue(0.875)
-        # TODO what causes bad HFA voltages in the next lines?
+        # TODO Kalindi verify that these voltages are still set correctly even after the next
+        # register values are set
         return
-
-        # on boot re-load the default configuration registers
-        self.updatePadCtrlReg(0)
-        self.updatePadCtrlReg(1)
 
         addr, val = helper.get_system_reset()
         self._sendQpix(addr, val)
@@ -600,6 +597,12 @@ class GUI(QMainWindow):
 
         addr, val = helper.set_system_clear()
         self._sendQpix(addr, val)
+
+        # TODO verify when the serial configuration registers should be tuned
+        return
+        # on boot re-load the default configuration registers
+        self.updatePadCtrlReg(0)
+        self.updatePadCtrlReg(1)
 
         # reset integrators on boot
         self.QpixIntegratorReset()
