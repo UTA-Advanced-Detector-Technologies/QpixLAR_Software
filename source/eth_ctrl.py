@@ -62,7 +62,7 @@ class GUI(QMainWindow):
         self.updateTriggerMask()
 
         # define initial vcm's for i2c when connected
-        self.vcm_addr1.setValue(0.973)
+        self.vcm_addr1.setValue(0.967)
         self.vcm_addr2.setValue(0.95)
 
         # vcomps set here
