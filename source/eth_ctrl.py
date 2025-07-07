@@ -571,7 +571,15 @@ class GUI(QMainWindow):
         Wrapper function to set qpix registers to a known starting state on GUI
         boot
         """
-        print("Qpix Init?")
+        print("Qpix Init..")
+
+        print("Qpix Startup")
+        self.qpix_startup()
+        time.sleep(0.5)
+
+        print("Qpix Kickstart")
+        self.qpix_kickstart()
+        time.sleep(0.5)
 
         addr, val = helper.get_system_reset()
         self._sendQpix(addr, val)
