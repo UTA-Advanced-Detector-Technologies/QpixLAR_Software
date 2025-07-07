@@ -577,8 +577,7 @@ class GUI(QMainWindow):
         self.qpix_startup()
         time.sleep(0.5)
 
-        print("Qpix Kickstart")
-        self.qpix_kickstart()
+        self.qpix_kickstart(force_kick=True)
         time.sleep(0.5)
 
         addr, val = helper.get_system_reset()
@@ -726,11 +725,12 @@ class GUI(QMainWindow):
     ########################
     ## Wrapper C Commands ##
     ########################
-    def qpix_kickstart(self):
+    def qpix_kickstart(self, force_kick=False):
         """
         send the equivalent of the qpix kickstart script
         """
-        if self.check_kick.isChecked():
+        if self.check_kick.isChecked() or force_kick:
+            print("Qpix Kickstart..")
             addr, val = REG.REG0, (1<<REG.QCTRL_opad_startup1) | (1<<REG.QCTRL_opad_startup2)
             self._sendQpix(addr, val)
         else:
